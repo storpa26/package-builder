@@ -17,8 +17,10 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand colors - CheapAlarms.com.au #1EA6DF */
+    --primary: 195 82% 49%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 195 82% 42%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -26,15 +28,32 @@ All colors MUST be HSL.
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 195 82% 96%;
+    --accent-foreground: 195 82% 49%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 195 82% 49%;
+
+    /* Custom design tokens */
+    --gradient-brand: linear-gradient(135deg, hsl(var(--primary)), hsl(195 82% 55%));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(210 40% 98%));
+    --shadow-card: 0 4px 6px -1px hsl(var(--primary) / 0.1), 0 2px 4px -1px hsl(var(--primary) / 0.06);
+    --shadow-elevated: 0 10px 15px -3px hsl(var(--primary) / 0.1), 0 4px 6px -2px hsl(var(--primary) / 0.05);
+    
+    /* Capacity meter colors */
+    --capacity-safe: 120 100% 35%;
+    --capacity-warning: 45 100% 45%;
+    --capacity-danger: 0 84% 60%;
+    
+    /* Progress bars */
+    --progress-track: 210 40% 94%;
+    --progress-safe: 120 100% 35%;
+    --progress-warning: 45 100% 45%;
+    --progress-danger: 0 84% 60%;
 
     --radius: 0.5rem;
 
