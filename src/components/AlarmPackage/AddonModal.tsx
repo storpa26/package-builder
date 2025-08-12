@@ -53,6 +53,9 @@ export function AddonModal({
     }
   };
 
+  const isAtMaxQuantity = quantity >= addon.qtyMax;
+  const showMaxQuantityWarning = isAtMaxQuantity && addon.qtyMax > 1;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -152,7 +155,9 @@ export function AddonModal({
 
         <div className="border-t pt-6 space-y-4">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Quantity</label>
+            <label className="text-sm font-medium">
+              Quantity {addon.qtyMax > 1 && <span className="text-xs text-muted-foreground">(max {addon.qtyMax})</span>}
+            </label>
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
@@ -173,6 +178,14 @@ export function AddonModal({
               </Button>
             </div>
           </div>
+
+          {showMaxQuantityWarning && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800">
+                <strong>Maximum quantity reached:</strong> {addon.qtyMax} is the maximum number of {addon.name.toLowerCase()} units supported by this system.
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">Include in my package</label>

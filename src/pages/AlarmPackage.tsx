@@ -143,6 +143,10 @@ export default function AlarmPackage() {
 
       <StickyEstimator
         estimatedTotal={estimatedTotal}
+        selectedAddons={selectedAddons}
+        autoAppendedItems={validation.autoAppendedItems}
+        context={context}
+        basePrice={basePrice}
         onGetPackage={handleGetPackage}
         className="lg:hidden"
       />

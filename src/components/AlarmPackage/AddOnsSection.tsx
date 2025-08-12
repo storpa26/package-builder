@@ -160,22 +160,36 @@ export function AddOnsSection({
                       return sum + (addon && !addon.isAutoAppended ? addon.unitPrice[context] * item.quantity : 0);
                     }, 0))}</span>
                   </div>
+                  
                   {selectedAddons.length > 0 && (
-                    <div className="flex justify-between">
-                      <span>Add-ons:</span>
-                      <span>{formatCurrency(selectedAddons.reduce((sum, item) => {
-                        const addon = addons.find(a => a.id === item.id);
-                        return sum + (addon && !addon.isAutoAppended ? addon.unitPrice[context] * item.quantity : 0);
-                      }, 0))}</span>
+                    <div className="space-y-1">
+                      <div className="font-medium">Selected Add-ons:</div>
+                      {selectedAddons.map((selection) => {
+                        const addon = addons.find(a => a.id === selection.id);
+                        if (!addon || addon.isAutoAppended) return null;
+                        return (
+                          <div key={selection.id} className="flex justify-between text-xs pl-2">
+                            <span>{addon.name} × {selection.quantity}</span>
+                            <span>{formatCurrency(addon.unitPrice[context] * selection.quantity)}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
+                  
                   {validation.autoAppendedItems.length > 0 && (
-                    <div className="flex justify-between text-yellow-700">
-                      <span>Required items:</span>
-                      <span>{formatCurrency(validation.autoAppendedItems.reduce((sum, item) => {
+                    <div className="space-y-1">
+                      <div className="font-medium text-yellow-700">Required Add-ons:</div>
+                      {validation.autoAppendedItems.map((item) => {
                         const addon = addons.find(a => a.id === item.id);
-                        return sum + (addon ? addon.unitPrice[context] * item.quantity : 0);
-                      }, 0))}</span>
+                        if (!addon) return null;
+                        return (
+                          <div key={item.id} className="flex justify-between text-xs pl-2 text-yellow-700">
+                            <span>{addon.name} × {item.quantity}</span>
+                            <span>{formatCurrency(addon.unitPrice[context] * item.quantity)}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
