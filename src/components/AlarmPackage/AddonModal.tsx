@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,12 @@ export function AddonModal({
 }: AddonModalProps) {
   const [quantity, setQuantity] = useState(currentQuantity);
   const [include, setInclude] = useState(currentQuantity > 0);
+
+  // Sync local state when addon or currentQuantity changes
+  useEffect(() => {
+    setQuantity(currentQuantity);
+    setInclude(currentQuantity > 0);
+  }, [addon?.id, currentQuantity]);
 
   if (!addon) return null;
 
