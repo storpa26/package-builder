@@ -3,11 +3,11 @@
 
 export const config = {
   wordpress: {
-    baseUrl: process.env.NEXT_PUBLIC_WP_BASE_URL || 'https://cheapalarms.com.au',
-    storeApiBase: process.env.NEXT_PUBLIC_WC_STORE_API_BASE || 'https://cheapalarms.com.au/wp-json/wc/store/v1',
-    restApiBase: process.env.NEXT_PUBLIC_WP_REST_BASE || 'https://cheapalarms.com.au/wp-json',
-    validateEndpoint: process.env.NEXT_PUBLIC_VALIDATE_ENDPOINT || 'https://cheapalarms.com.au/wp-json/ca/v1/alarm/validate',
-    checkoutUrl: process.env.NEXT_PUBLIC_WOO_CHECKOUT_URL || 'https://cheapalarms.com.au/checkout/',
+    baseUrl: import.meta.env.VITE_WP_BASE_URL || 'https://cheapalarms.com.au',
+    storeApiBase: import.meta.env.VITE_WC_STORE_API_BASE || 'https://cheapalarms.com.au/wp-json/wc/store/v1',
+    restApiBase: import.meta.env.VITE_WP_REST_BASE || 'https://cheapalarms.com.au/wp-json',
+    validateEndpoint: import.meta.env.VITE_VALIDATE_ENDPOINT || 'https://cheapalarms.com.au/wp-json/ca/v1/alarm/validate',
+    checkoutUrl: import.meta.env.VITE_WOO_CHECKOUT_URL || 'https://cheapalarms.com.au/checkout/',
   },
   
   // System limits and pricing (temporary until moved to backend)
