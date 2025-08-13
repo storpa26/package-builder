@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Minus, Plus, CheckCircle2, Package, Play, HelpCircle } from 'lucide-react';
-import { Addon } from '@/data/addons';
+import type { Addon } from '@/types';
 import { Context } from '@/data/assumptions';
 import { formatCurrency } from '@/lib/quote';
 

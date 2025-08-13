@@ -8,54 +8,64 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* CheapAlarms Brand Colors */
+    --black: 0 0% 1%;           /* #020202 */
+    --pink: 343 49% 58%;        /* #c95375 */
+    --teal: 188 52% 37%;        /* #288896 */
+    --teal-dark: 190 100% 20%;  /* #005667 */
+    --ash: 60 1% 51%;           /* #838381 */
+    --pink-bright: 320 100% 70%; /* #ff66c4 */
+    --teal-new: 188 98% 34%;    /* #018295 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    /* Brand colors - CheapAlarms.com.au #1EA6DF */
-    --primary: 195 82% 49%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 195 82% 42%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 195 82% 96%;
-    --accent-foreground: 195 82% 49%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 195 82% 49%;
-
+    /* Semantic Tokens */
+    --background: var(--black);
+    --foreground: 0 0% 98%;
+    
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 95%;
+    
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 95%;
+    
+    --primary: var(--pink);
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 343 49% 52%;
+    
+    --secondary: var(--teal);
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 0 0% 8%;
+    --muted-foreground: var(--ash);
+    
+    --accent: var(--pink-bright);
+    --accent-foreground: var(--black);
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: hsl(var(--ash) / 0.3);
+    --input: hsl(var(--ash) / 0.2);
+    --ring: var(--teal-new);
+    --focus: var(--teal-new);
+    
     /* Custom design tokens */
-    --gradient-brand: linear-gradient(135deg, hsl(var(--primary)), hsl(195 82% 55%));
-    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(210 40% 98%));
-    --shadow-card: 0 4px 6px -1px hsl(var(--primary) / 0.1), 0 2px 4px -1px hsl(var(--primary) / 0.06);
-    --shadow-elevated: 0 10px 15px -3px hsl(var(--primary) / 0.1), 0 4px 6px -2px hsl(var(--primary) / 0.05);
+    --gradient-brand: linear-gradient(135deg, hsl(var(--pink)), hsl(var(--pink-bright)));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--black)), hsl(0 0% 4%));
+    --shadow-card: 0 4px 6px -1px hsl(var(--black) / 0.3), 0 2px 4px -1px hsl(var(--ash) / 0.1);
+    --shadow-elevated: 0 10px 15px -3px hsl(var(--black) / 0.4), 0 4px 6px -2px hsl(var(--ash) / 0.2);
     
     /* Capacity meter colors */
-    --capacity-safe: 120 100% 35%;
+    --capacity-safe: var(--teal);
     --capacity-warning: 45 100% 45%;
-    --capacity-danger: 0 84% 60%;
+    --capacity-danger: var(--pink-bright);
     
     /* Progress bars */
-    --progress-track: 210 40% 94%;
-    --progress-safe: 120 100% 35%;
+    --progress-track: hsl(var(--ash) / 0.2);
+    --progress-safe: var(--teal);
     --progress-warning: 45 100% 45%;
-    --progress-danger: 0 84% 60%;
+    --progress-danger: var(--pink-bright);
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 

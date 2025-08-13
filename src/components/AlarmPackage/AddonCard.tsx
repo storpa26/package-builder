@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Eye, Package } from 'lucide-react';
-import { Addon } from '@/data/addons';
+import type { Addon } from '@/types';
 import { Context } from '@/data/assumptions';
 import { formatCurrency } from '@/lib/quote';
 

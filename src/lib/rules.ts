@@ -1,4 +1,4 @@
-import { Addon } from '@/data/addons';
+import type { Addon } from '@/types';
 import { assumptions, Context } from '@/data/assumptions';
 
 export interface SelectedAddon {

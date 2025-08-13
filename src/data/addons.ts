@@ -1,22 +1,8 @@
-export interface Addon {
-  id: string;
-  name: string;
-  type: 'sensor' | 'keypad' | 'controller' | 'psu' | 'expander' | 'accessory';
-  consumesInput: boolean;
-  powerMilliAmps: number;
-  unitPrice: {
-    residential: number;
-    retail: number;
-    office: number;
-    warehouse: number;
-  };
-  summary: string;
-  bullets: string[];
-  qtyMin: number;
-  qtyMax: number;
-  isTouchscreen?: boolean;
-  isAutoAppended?: boolean;
-}
+import type { Context } from '../lib/config';
+import type { Addon } from '../types';
+
+// Add-on product data for display (pricing comes from WooCommerce)
+// This contains UI data only - no pricing logic
 
 export const addons: Addon[] = [
   {
