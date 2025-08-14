@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Calculator } from 'lucide-react';
+import { Plus, Calculator, AlertCircle, Loader2 } from 'lucide-react';
 import { AddonCard } from './AddonCard';
 import { AddonModal } from './AddonModal';
 import { CapacityMeter } from './CapacityMeter';
-import { addons } from '@/data/addons';
-import type { Addon } from '@/types';
+import { addons as staticAddons } from '@/data/addons';
+import type { Addon, WooProduct } from '@/types';
 import { Context } from '@/data/assumptions';
 import { SelectedAddon, RulesEngine } from '@/lib/rules';
 import { formatCurrency } from '@/lib/quote';
+import { wooApi } from '@/lib/api';
 
 interface AddOnsSectionProps {
   context: Context;
@@ -29,13 +30,122 @@ export function AddOnsSection({
 }: AddOnsSectionProps) {
   const [selectedAddon, setSelectedAddon] = useState<Addon | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [addonProducts, setAddonProducts] = useState<Addon[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const rulesEngine = new RulesEngine(addons);
+  // Fetch addon-only products from WooCommerce
+  useEffect(() => {
+    const fetchAddonProducts = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch products tagged as "addon-only"
+        const wooProducts = await wooApi.getAddonOnlyProducts();
+        
+        // Map WooCommerce products to local Addon type
+        const mappedAddons = mapWooProductsToAddons(wooProducts);
+        
+        // Combine with auto-appended items from static data
+        const autoAppendedAddons = staticAddons.filter(addon => addon.isAutoAppended);
+        setAddonProducts([...mappedAddons, ...autoAppendedAddons]);
+        
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch addon products:', err);
+        setError('Failed to load add-on products. Please try again later.');
+        setIsLoading(false);
+        
+        // Fallback to static data if API fails
+        setAddonProducts(staticAddons);
+      }
+    };
+
+    fetchAddonProducts();
+  }, []);
+
+  // Map WooCommerce products to local Addon type
+  const mapWooProductsToAddons = (products: WooProduct[]): Addon[] => {
+    return products.map(product => {
+      // Check if meta_data exists, if not use an empty array
+      const metaData = product.meta_data || [];
+      
+      // Extract addon type from meta data or default to "accessory"
+      const typeMetaData = metaData.find(meta => meta.key === '_addon_type');
+      const type = typeMetaData?.value || 'accessory';
+      
+      // Extract power consumption from meta data or default to 0
+      const powerMetaData = metaData.find(meta => meta.key === '_power_milliamps');
+      const powerMilliAmps = powerMetaData ? Number(powerMetaData.value) : 0;
+      
+      // Extract whether it consumes input from meta data
+      const consumesInputMeta = metaData.find(meta => meta.key === '_consumes_input');
+      const consumesInput = consumesInputMeta ? consumesInputMeta.value === 'yes' : false;
+      
+      // Extract touchscreen property
+      const isTouchscreenMeta = metaData.find(meta => meta.key === '_is_touchscreen');
+      const isTouchscreen = isTouchscreenMeta ? isTouchscreenMeta.value === 'yes' : false;
+      
+      // Extract min/max quantities
+      const qtyMinMeta = metaData.find(meta => meta.key === '_qty_min');
+      const qtyMin = qtyMinMeta ? Number(qtyMinMeta.value) : 0;
+      
+      const qtyMaxMeta = metaData.find(meta => meta.key === '_qty_max');
+      const qtyMax = qtyMaxMeta ? Number(qtyMaxMeta.value) : 10;
+      
+      // Extract bullet points from description
+      const bullets = product.short_description
+        ? product.short_description
+            .split('•')
+            .map(bullet => bullet.trim())
+            .filter(Boolean)
+        : [];
+      
+      // Create pricing object for different contexts
+      const priceValue = parseFloat(product.price);
+      const unitPrice = {
+        residential: priceValue,
+        retail: priceValue * 1.15, // 15% markup for retail
+        office: priceValue * 1.15,  // 15% markup for office
+        warehouse: priceValue * 1.3  // 30% markup for warehouse
+      };
+      
+      // Check for context-specific pricing in meta data
+      // Use metaData instead of product.meta_data
+      const residentialPriceMeta = metaData.find(meta => meta.key === '_price_residential');
+      const retailPriceMeta = metaData.find(meta => meta.key === '_price_retail');
+      const officePriceMeta = metaData.find(meta => meta.key === '_price_office');
+      const warehousePriceMeta = metaData.find(meta => meta.key === '_price_warehouse');
+      
+      if (residentialPriceMeta) unitPrice.residential = Number(residentialPriceMeta.value);
+      if (retailPriceMeta) unitPrice.retail = Number(retailPriceMeta.value);
+      if (officePriceMeta) unitPrice.office = Number(officePriceMeta.value);
+      if (warehousePriceMeta) unitPrice.warehouse = Number(warehousePriceMeta.value);
+      
+      return {
+        id: product.slug,
+        name: product.name,
+        type: type as 'sensor' | 'keypad' | 'controller' | 'psu' | 'expander' | 'accessory',
+        consumesInput,
+        powerMilliAmps,
+        unitPrice,
+        summary: product.short_description || '',
+        bullets: bullets.length > 0 ? bullets : ["No details available"],
+        qtyMin,
+        qtyMax,
+        isTouchscreen,
+        isAutoAppended: false // API products are never auto-appended
+      };
+    });
+  };
+
+  const rulesEngine = new RulesEngine(addonProducts);
   const validation = rulesEngine.validateSelection(selectedAddons);
   const capacityLimits = rulesEngine.getCapacityLimits(selectedAddons);
 
   // Filter out auto-appended items from the main grid
-  const userSelectableAddons = addons.filter(addon => !addon.isAutoAppended);
+  const userSelectableAddons = addonProducts.filter(addon => !addon.isAutoAppended);
 
   const getSelectedQuantity = (addonId: string) => {
     const selected = selectedAddons.find(s => s.id === addonId);
@@ -60,10 +170,57 @@ export function AddOnsSection({
 
   const getAutoAppendedItems = () => {
     return validation.autoAppendedItems.map(item => {
-      const addon = addons.find(a => a.id === item.id);
+      const addon = addonProducts.find(a => a.id === item.id);
       return addon ? { addon, quantity: item.quantity } : null;
     }).filter(Boolean);
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Add-Ons & Upgrades</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Loading available add-ons...
+            </p>
+          </div>
+          <div className="flex justify-center items-center py-16">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Error state
+  if (error && addonProducts.length === 0) {
+    return (
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Add-Ons & Upgrades</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Customize your security system with additional sensors and features
+            </p>
+          </div>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-red-700 mb-2">Failed to Load Add-ons</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button 
+              onClick={() => window.location.reload()}
+              variant="outline"
+              className="mx-auto"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 px-4">
@@ -154,10 +311,10 @@ export function AddOnsSection({
                   <div className="flex justify-between">
                     <span>Base package:</span>
                     <span>{formatCurrency(estimatedTotal - validation.autoAppendedItems.reduce((sum, item) => {
-                      const addon = addons.find(a => a.id === item.id);
+                      const addon = addonProducts.find(a => a.id === item.id);
                       return sum + (addon ? addon.unitPrice[context] * item.quantity : 0);
                     }, 0) - selectedAddons.reduce((sum, item) => {
-                      const addon = addons.find(a => a.id === item.id);
+                      const addon = addonProducts.find(a => a.id === item.id);
                       return sum + (addon && !addon.isAutoAppended ? addon.unitPrice[context] * item.quantity : 0);
                     }, 0))}</span>
                   </div>
@@ -166,7 +323,7 @@ export function AddOnsSection({
                     <div className="space-y-1">
                       <div className="font-medium">Selected Add-ons:</div>
                       {selectedAddons.map((selection) => {
-                        const addon = addons.find(a => a.id === selection.id);
+                        const addon = addonProducts.find(a => a.id === selection.id);
                         if (!addon || addon.isAutoAppended) return null;
                         return (
                           <div key={selection.id} className="flex justify-between text-xs pl-2">
@@ -182,7 +339,7 @@ export function AddOnsSection({
                     <div className="space-y-1">
                       <div className="font-medium text-yellow-700">Required Add-ons:</div>
                       {validation.autoAppendedItems.map((item) => {
-                        const addon = addons.find(a => a.id === item.id);
+                        const addon = addonProducts.find(a => a.id === item.id);
                         if (!addon) return null;
                         return (
                           <div key={item.id} className="flex justify-between text-xs pl-2 text-yellow-700">

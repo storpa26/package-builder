@@ -1,52 +1,46 @@
 // WordPress + WooCommerce Store API client with nonce handling
-
 import { config } from './config';
 import type { WooProduct, WooCart, ValidationResult, ApiHeaders } from '../types';
+
+type WooTag = {
+  id: number;
+  name: string;
+  slug: string;
+};
 
 class WooCommerceAPI {
   private nonce: string | null = null;
   private cartToken: string | null = null;
 
   private async makeRequest<T>(
-    endpoint: string, 
+    endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
-    // Merge existing headers safely
+    // Merge existing headers
     if (options.headers) {
       Object.entries(options.headers as Record<string, string>).forEach(([key, value]) => {
         headers[key] = value;
       });
     }
 
-    // Include nonce in requests if available
-    if (this.nonce) {
-      headers['Nonce'] = this.nonce;
-    }
-
-    if (this.cartToken) {
-      headers['Cart-Token'] = this.cartToken;
-    }
+    // Include nonce & cart token
+    if (this.nonce) headers['Nonce'] = this.nonce;
+    if (this.cartToken) headers['Cart-Token'] = this.cartToken;
 
     const response = await fetch(endpoint, {
       ...options,
       headers,
     });
 
-    // Update nonce if returned in response
+    // Update nonce/cart token from response
     const newNonce = response.headers.get('Nonce');
     const newCartToken = response.headers.get('Cart-Token');
-    
-    if (newNonce) {
-      this.nonce = newNonce;
-    }
-    
-    if (newCartToken) {
-      this.cartToken = newCartToken;
-    }
+    if (newNonce) this.nonce = newNonce;
+    if (newCartToken) this.cartToken = newCartToken;
 
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);
@@ -55,21 +49,55 @@ class WooCommerceAPI {
     return response.json();
   }
 
-  async getProducts(params: { 
+  async getProducts(params: {
     category?: string;
+    tag?: string; // added
     slug?: string;
     per_page?: number;
     include?: number[];
   } = {}): Promise<WooProduct[]> {
     const queryParams = new URLSearchParams();
-    
+
     if (params.category) queryParams.set('category', params.category);
+    if (params.tag) queryParams.set('tag', params.tag);
     if (params.slug) queryParams.set('slug', params.slug);
     if (params.per_page) queryParams.set('per_page', params.per_page.toString());
-    if (params.include) queryParams.set('include', params.include.join(','));
+    if (params.include?.length) queryParams.set('include', params.include.join(','));
 
     const endpoint = `${config.wordpress.storeApiBase}/products?${queryParams}`;
     return this.makeRequest<WooProduct[]>(endpoint);
+  }
+
+  // --- Tag helpers ---
+  private async getProductTags(params: { search?: string; per_page?: number } = {}): Promise<WooTag[]> {
+    const qs = new URLSearchParams();
+    if (params.search) qs.set('search', params.search);
+    if (params.per_page) qs.set('per_page', String(params.per_page));
+    const endpoint = `${config.wordpress.storeApiBase}/products/tags${qs.toString() ? `?${qs.toString()}` : ''}`;
+    return this.makeRequest<WooTag[]>(endpoint);
+  }
+
+  private async resolveTagIdBySlug(slug: string): Promise<number | null> {
+    const tags = await this.getProductTags({ search: slug, per_page: 100 });
+    const match = tags.find(t => t.slug === slug);
+    return match ? match.id : null;
+  }
+
+  /** Fetch products with tag/category "addon-only" */
+  async getAddonOnlyProducts(perPage = 100): Promise<WooProduct[]> {
+    // Try by tag slug
+    let products = await this.getProducts({ tag: 'addon-only', per_page: perPage });
+    if (products.length > 0) return products;
+
+    // Try by tag ID
+    const tagId = await this.resolveTagIdBySlug('addon-only');
+    if (tagId) {
+      products = await this.getProducts({ tag: String(tagId), per_page: perPage });
+      if (products.length > 0) return products;
+    }
+
+    // Fallback: try by category slug
+    return this.getProducts({ category: 'addon-only', per_page: perPage });
   }
 
   async getCart(): Promise<WooCart> {
@@ -83,10 +111,8 @@ class WooCommerceAPI {
     meta?: Record<string, any>;
   }>): Promise<WooCart> {
     const endpoint = `${config.wordpress.storeApiBase}/cart/add-item`;
-    
-    // Add items one by one (Store API limitation)
     let cart: WooCart | null = null;
-    
+
     for (const item of items) {
       cart = await this.makeRequest<WooCart>(endpoint, {
         method: 'POST',
@@ -97,7 +123,7 @@ class WooCommerceAPI {
         }),
       });
     }
-    
+
     return cart!;
   }
 
@@ -122,12 +148,11 @@ class WooCommerceAPI {
     context: string;
     answers?: Record<string, any>;
   }): Promise<ValidationResult> {
-    // TODO: Remove this fallback once WordPress endpoint exists
     const fallbackResult: ValidationResult = {
       normalized: [
         { productId: payload.baseProductId, qty: 1, groupId: 'alarm-package' },
         ...payload.addons.map((addon, index) => ({
-          productId: index + 100, // Temporary ID
+          productId: index + 100,
           qty: addon.qty,
           groupId: 'alarm-package'
         }))
@@ -140,10 +165,10 @@ class WooCommerceAPI {
         power: payload.addons.reduce((sum, a) => {
           const power = a.id === 'tskp' ? 90 : a.id === 'outpir' ? 25 : 15;
           return sum + (power * a.qty);
-        }, 200), // Base system power
+        }, 200),
         powerLimit: config.system.limits.powerBudget,
         keypads: payload.addons.filter(a => ['tskp', 'wlkp'].includes(a.id))
-          .reduce((sum, a) => sum + a.qty, 1), // Base keypad
+          .reduce((sum, a) => sum + a.qty, 1),
         keypadsLimit: config.system.limits.keypads,
         touchscreens: payload.addons.filter(a => a.id === 'tskp')
           .reduce((sum, a) => sum + a.qty, 0),
@@ -165,10 +190,7 @@ class WooCommerceAPI {
   }
 }
 
-// Export singleton instance
 export const wooApi = new WooCommerceAPI();
 
-// Initialize cart token on first load
-wooApi.getCart().catch(() => {
-  // Ignore errors on initial load
-});
+// Initialize cart token
+wooApi.getCart().catch(() => { /* ignore initial load errors */ });
