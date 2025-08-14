@@ -72,7 +72,7 @@ export function AddonModal({
             </div>
             <div className="flex-1">
               <DialogTitle className="text-xl">{addon.name}</DialogTitle>
-              <p className="text-muted-foreground mt-1">{addon.summary}</p>
+              {/* <p className="text-muted-foreground mt-1">{addon.summary}</p> */}
               <Badge variant="outline" className="mt-2 text-primary border-primary/30">
                 {formatCurrency(price)} each
               </Badge>

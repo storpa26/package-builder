@@ -5,6 +5,10 @@ import type { Addon } from '@/types';
 import { Context } from '@/data/assumptions';
 import { formatCurrency } from '@/lib/quote';
 
+// helper to render plain text in cards (summary may contain HTML from Woo)
+const stripHtml = (s?: string) =>
+  (s || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+
 interface AddonCardProps {
   addon: Addon;
   context: Context;
@@ -23,25 +27,28 @@ const typeIcons = {
   accessory: Package
 };
 
-export function AddonCard({ 
-  addon, 
-  context, 
-  selectedQuantity, 
+export function AddonCard({
+  addon,
+  context,
+  selectedQuantity,
   isAutoAppended = false,
   onClick,
-  className 
+  className
 }: AddonCardProps) {
   const Icon = typeIcons[addon.type];
   const price = addon.unitPrice[context];
   const isSelected = selectedQuantity > 0;
 
+  // Clean, safe summary for the card (no HTML). Fallback to first bullet.
+  const displayedSummary = stripHtml(addon.summary) || (addon.bullets?.[0] ?? '');
+
   return (
-    <Card 
+    <Card
       className={`
         relative cursor-pointer transition-all duration-200 hover:shadow-md
         ${isSelected ? 'ring-2 ring-primary/20 bg-primary/5' : 'hover:border-primary/30'}
         ${isAutoAppended ? 'opacity-75 cursor-not-allowed' : ''}
-        ${className}
+        ${className || ''}
       `}
       onClick={isAutoAppended ? undefined : onClick}
     >
@@ -71,20 +78,20 @@ export function AddonCard({
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-sm leading-tight">{addon.name}</h3>
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {addon.summary}
+                  {displayedSummary}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center justify-between">
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className="text-primary border-primary/30 bg-primary/5"
             >
               {formatCurrency(price)}
             </Badge>
-            
+
             {!isAutoAppended && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Eye className="w-3 h-3" />

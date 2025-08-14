@@ -35,7 +35,7 @@ export const config = {
   
   // Product configuration
   products: {
-    addonCategory: 'addon-only', // WooCommerce category for add-on products
+    addonCategory: 'alarm-addon', // WooCommerce category for add-on products
     baseProductSlug: 'hybrid-wireless-alarm-system' // Base package product
   }
 } as const;

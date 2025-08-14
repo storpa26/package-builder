@@ -100,6 +100,23 @@ class WooCommerceAPI {
     return this.getProducts({ category: 'addon-only', per_page: perPage });
   }
 
+  /** Fetch products with tag/category "alarm-addon" */
+  async getAlarmAddonProducts(perPage = 100): Promise<WooProduct[]> {
+    // Try by tag slug
+    let products = await this.getProducts({ tag: 'alarm-addon', per_page: perPage });
+    if (products.length > 0) return products;
+
+    // Try by tag ID
+    const tagId = await this.resolveTagIdBySlug('alarm-addon');
+    if (tagId) {
+      products = await this.getProducts({ tag: String(tagId), per_page: perPage });
+      if (products.length > 0) return products;
+    }
+
+    // Fallback: try by category slug
+    return this.getProducts({ category: 'alarm-addon', per_page: perPage });
+  }
+
   async getCart(): Promise<WooCart> {
     const endpoint = `${config.wordpress.storeApiBase}/cart`;
     return this.makeRequest<WooCart>(endpoint);

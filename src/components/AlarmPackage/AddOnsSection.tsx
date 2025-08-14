@@ -42,7 +42,8 @@ export function AddOnsSection({
         setError(null);
         
         // Fetch products tagged as "addon-only"
-        const wooProducts = await wooApi.getAddonOnlyProducts();
+        // Fetch products tagged as "alarm-addon"
+        const wooProducts = await wooApi.getAlarmAddonProducts();
         
         // Map WooCommerce products to local Addon type
         const mappedAddons = mapWooProductsToAddons(wooProducts);
@@ -95,15 +96,36 @@ export function AddOnsSection({
       const qtyMax = qtyMaxMeta ? Number(qtyMaxMeta.value) : 10;
       
       // Extract bullet points from description
-      const bullets = product.short_description
-        ? product.short_description
-            .split('•')
-            .map(bullet => bullet.trim())
-            .filter(Boolean)
-        : [];
+ // Replace your current bullets mapping with:
+const bullets = product.short_description
+  ? extractBullets(product.short_description)
+  : [];
+
+// Minimal helper: prefers <li>, falls back to <br>/<p>/plain text
+function extractBullets(html: string): string[] {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+
+  // 1) If Woo used a real list, grab the <li> text
+  const liTexts = Array.from(div.querySelectorAll('li'))
+    .map(li => (li.textContent || '').trim())
+    .filter(Boolean);
+  if (liTexts.length) return liTexts;
+
+  // 2) Otherwise convert <br>/<p> to lines and strip tags
+  const text = div.innerHTML
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?p[^>]*>/gi, '\n')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/<[^>]*>/g, '');
+  return text.split(/\n|•|·|-/).map(s => s.trim()).filter(Boolean);
+}
+
       
       // Create pricing object for different contexts
-      const priceValue = parseFloat(product.price);
+      const priceValue = product.prices.price && !isNaN(parseFloat(product.prices.price)) 
+        ? (parseFloat(product.prices.price)/(10**product.prices.currency_minor_unit)) 
+        : 0; // Default to 0 if price is invalid
       const unitPrice = {
         residential: priceValue,
         retail: priceValue * 1.15, // 15% markup for retail
@@ -356,10 +378,18 @@ export function AddOnsSection({
                   onClick={onAddToQuote}
                   className="w-full bg-primary hover:bg-primary-hover"
                   size="lg"
-                  disabled={validation.violations.length > 0}
+                  disabled
                 >
                   Add to Quote
                 </Button>
+                {/* <Button 
+                  onClick={onAddToQuote}
+                  className="w-full bg-primary hover:bg-primary-hover"
+                  size="lg"
+                  disabled={validation.violations.length > 0}
+                >
+                  Add to Quote
+                </Button> */}
 
                 <p className="text-xs text-muted-foreground text-center">
                   Final price may vary based on site conditions and installation requirements

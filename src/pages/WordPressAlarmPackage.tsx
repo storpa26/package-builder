@@ -59,10 +59,8 @@ export default function WordPressAlarmPackage() {
     async function loadProducts() {
       try {
         setLoading(true);
-        const products = await wooApi.getProducts({
-          category: config.products.addonCategory,
-          per_page: 50
-        });
+        // Replace getProducts with getAlarmAddonProducts
+        const products = await wooApi.getAlarmAddonProducts(50);
         setWooProducts(products);
       } catch (error) {
         console.error('Failed to load products:', error);

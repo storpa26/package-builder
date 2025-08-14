@@ -62,6 +62,7 @@ export interface WooProduct {
     price: string;
     regular_price: string;
     sale_price: string;
+    currency_minor_unit: number;
   };
   slug: string;
   categories: Array<{
@@ -84,6 +85,8 @@ export interface WooCartItem {
     price: string;
     regular_price: string;
     sale_price: string;
+    currency_minor_unit: number;
+
   };
   meta: {
     [key: string]: any;
