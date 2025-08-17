@@ -8,7 +8,7 @@ import { AddonModal } from './AddonModal';
 import { CapacityMeter } from './CapacityMeter';
 import { addons as staticAddons } from '@/data/addons';
 import type { Addon, WooProduct } from '@/types';
-import { Context } from '@/data/assumptions';
+import { Context, assumptions } from '@/data/assumptions';
 import { SelectedAddon, RulesEngine } from '@/lib/rules';
 import { formatCurrency } from '@/lib/quote';
 import { wooApi } from '@/lib/api';
@@ -72,28 +72,49 @@ export function AddOnsSection({
       // Check if meta_data exists, if not use an empty array
       const metaData = product.meta_data || [];
       
-      // Extract addon type from meta data or default to "accessory"
+      // Try to find matching static addon for fallback data
+      const staticAddon = staticAddons.find(addon => {
+        // First try exact slug match
+        if (addon.id === product.slug) return true;
+        
+        // Then try name-based matching
+        const productNameLower = product.name.toLowerCase();
+        const addonNameLower = addon.name.toLowerCase();
+        
+        // Check for key terms
+        if (productNameLower.includes('touchscreen') && addonNameLower.includes('touchscreen')) return true;
+        if (productNameLower.includes('outdoor') && addonNameLower.includes('outdoor')) return true;
+        if (productNameLower.includes('glass') && addonNameLower.includes('glass')) return true;
+        if (productNameLower.includes('door') && addonNameLower.includes('door')) return true;
+        if (productNameLower.includes('panic') && addonNameLower.includes('panic')) return true;
+        if (productNameLower.includes('smoke') && addonNameLower.includes('smoke')) return true;
+        if (productNameLower.includes('keypad') && addonNameLower.includes('keypad') && !productNameLower.includes('touchscreen')) return true;
+        
+        return false;
+      });
+      
+      // Extract addon type from meta data or fallback to static data
       const typeMetaData = metaData.find(meta => meta.key === '_addon_type');
-      const type = typeMetaData?.value || 'accessory';
+      const type = typeMetaData?.value || staticAddon?.type || 'accessory';
       
-      // Extract power consumption from meta data or default to 0
+      // Extract power consumption from meta data or fallback to static data
       const powerMetaData = metaData.find(meta => meta.key === '_power_milliamps');
-      const powerMilliAmps = powerMetaData ? Number(powerMetaData.value) : 0;
+      const powerMilliAmps = powerMetaData ? Number(powerMetaData.value) : (staticAddon?.powerMilliAmps || 0);
       
-      // Extract whether it consumes input from meta data
+      // Extract whether it consumes input from meta data or fallback to static data
       const consumesInputMeta = metaData.find(meta => meta.key === '_consumes_input');
-      const consumesInput = consumesInputMeta ? consumesInputMeta.value === 'yes' : false;
+      const consumesInput = consumesInputMeta ? consumesInputMeta.value === 'yes' : (staticAddon?.consumesInput || false);
       
-      // Extract touchscreen property
+      // Extract touchscreen property or fallback to static data
       const isTouchscreenMeta = metaData.find(meta => meta.key === '_is_touchscreen');
-      const isTouchscreen = isTouchscreenMeta ? isTouchscreenMeta.value === 'yes' : false;
+      const isTouchscreen = isTouchscreenMeta ? isTouchscreenMeta.value === 'yes' : (staticAddon?.isTouchscreen || false);
       
-      // Extract min/max quantities
+      // Extract min/max quantities or fallback to static data
       const qtyMinMeta = metaData.find(meta => meta.key === '_qty_min');
-      const qtyMin = qtyMinMeta ? Number(qtyMinMeta.value) : 0;
+      const qtyMin = qtyMinMeta ? Number(qtyMinMeta.value) : (staticAddon?.qtyMin || 0);
       
       const qtyMaxMeta = metaData.find(meta => meta.key === '_qty_max');
-      const qtyMax = qtyMaxMeta ? Number(qtyMaxMeta.value) : 10;
+      const qtyMax = qtyMaxMeta ? Number(qtyMaxMeta.value) : (staticAddon?.qtyMax || 10);
       
       // Extract bullet points from description
  // Replace your current bullets mapping with:
@@ -165,6 +186,9 @@ function extractBullets(html: string): string[] {
   const rulesEngine = new RulesEngine(addonProducts);
   const validation = rulesEngine.validateSelection(selectedAddons);
   const capacityLimits = rulesEngine.getCapacityLimits(selectedAddons);
+  
+  // Calculate real-time estimated total
+  const calculatedTotal = rulesEngine.calculateTotal(selectedAddons, context);
 
   // Filter out auto-appended items from the main grid
   const userSelectableAddons = addonProducts.filter(addon => !addon.isAutoAppended);
@@ -193,7 +217,7 @@ function extractBullets(html: string): string[] {
   const getAutoAppendedItems = () => {
     return validation.autoAppendedItems.map(item => {
       const addon = addonProducts.find(a => a.id === item.id);
-      return addon ? { addon, quantity: item.quantity } : null;
+      return addon ? { addon, quantity: item.quantity, reason: item.reason } : null;
     }).filter(Boolean);
   };
 
@@ -276,7 +300,7 @@ function extractBullets(html: string): string[] {
                   Required Additions
                 </h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {getAutoAppendedItems().map(({ addon, quantity }) => (
+                  {getAutoAppendedItems().map(({ addon, quantity, reason }) => (
                     <AddonCard
                       key={`auto-${addon!.id}`}
                       addon={addon!}
@@ -288,10 +312,14 @@ function extractBullets(html: string): string[] {
                   ))}
                 </div>
                 <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Why these items?</strong> Your selected configuration requires additional 
-                    components to ensure proper system operation and comply with Australian standards.
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-yellow-800">Why these items were added:</p>
+                    <ul className="text-sm text-yellow-700 space-y-1">
+                      {validation.autoAppendedItems.map((item, index) => (
+                        <li key={index}>• {item.reason}</li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
             )}
@@ -310,7 +338,7 @@ function extractBullets(html: string): string[] {
           </div>
 
           <div className="space-y-6">
-            <CapacityMeter limits={capacityLimits} />
+            <CapacityMeter limits={capacityLimits} violations={validation.violations} />
 
             <Card className="sticky top-4">
               <CardHeader>
@@ -322,7 +350,7 @@ function extractBullets(html: string): string[] {
               <CardContent className="space-y-4">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-primary">
-                    {formatCurrency(estimatedTotal)}
+                    {formatCurrency(calculatedTotal)}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Including professional installation
@@ -332,13 +360,7 @@ function extractBullets(html: string): string[] {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Base package:</span>
-                    <span>{formatCurrency(estimatedTotal - validation.autoAppendedItems.reduce((sum, item) => {
-                      const addon = addonProducts.find(a => a.id === item.id);
-                      return sum + (addon ? addon.unitPrice[context] * item.quantity : 0);
-                    }, 0) - selectedAddons.reduce((sum, item) => {
-                      const addon = addonProducts.find(a => a.id === item.id);
-                      return sum + (addon && !addon.isAutoAppended ? addon.unitPrice[context] * item.quantity : 0);
-                    }, 0))}</span>
+                    <span>{formatCurrency(assumptions.basePrice[context])}</span>
                   </div>
                   
                   {selectedAddons.length > 0 && (
@@ -404,6 +426,7 @@ function extractBullets(html: string): string[] {
           context={context}
           isOpen={isModalOpen}
           currentQuantity={selectedAddon ? getSelectedQuantity(selectedAddon.id) : 0}
+          validation={validation}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSaveSelection}
         />

@@ -4,16 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { Minus, Plus, CheckCircle2, Package, Play, HelpCircle } from 'lucide-react';
+import { Minus, Plus, CheckCircle2, Package, Play, HelpCircle, AlertCircle } from 'lucide-react';
 import type { Addon } from '@/types';
 import { Context } from '@/data/assumptions';
 import { formatCurrency } from '@/lib/quote';
+import { RuleValidation } from '@/lib/rules';
 
 interface AddonModalProps {
   addon: Addon | null;
   context: Context;
   isOpen: boolean;
   currentQuantity: number;
+  validation: RuleValidation;
   onClose: () => void;
   onSave: (quantity: number, include: boolean) => void;
 }
@@ -23,11 +25,13 @@ export function AddonModal({
   context, 
   isOpen, 
   currentQuantity, 
+  validation,
   onClose, 
   onSave 
 }: AddonModalProps) {
   const [quantity, setQuantity] = useState(currentQuantity);
   const [include, setInclude] = useState(currentQuantity > 0);
+  const [incrementError, setIncrementError] = useState<string | null>(null);
 
   // Sync local state when addon or currentQuantity changes
   useEffect(() => {
@@ -46,21 +50,31 @@ export function AddonModal({
   };
 
   const incrementQuantity = () => {
-    if (quantity < addon.qtyMax) {
+    if (!addon) return;
+    
+    const canIncrement = validation.canIncrement(addon.id, quantity);
+    if (canIncrement.allowed) {
       setQuantity(quantity + 1);
       if (!include) setInclude(true);
+      setIncrementError(null);
+    } else {
+      setIncrementError(canIncrement.reason || 'Cannot increase quantity');
     }
   };
 
   const decrementQuantity = () => {
+    if (!addon) return;
+    
     if (quantity > addon.qtyMin) {
       setQuantity(quantity - 1);
       if (quantity - 1 === 0) setInclude(false);
+      setIncrementError(null);
     }
   };
 
-  const isAtMaxQuantity = quantity >= addon.qtyMax;
-  const showMaxQuantityWarning = isAtMaxQuantity && addon.qtyMax > 1;
+  const canIncrementResult = addon ? validation.canIncrement(addon.id, quantity) : { allowed: false };
+  const isAtMaxQuantity = !canIncrementResult.allowed;
+  const showMaxQuantityWarning = isAtMaxQuantity && incrementError;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -170,15 +184,18 @@ export function AddonModal({
                 size="sm"
                 onClick={decrementQuantity}
                 disabled={quantity <= addon.qtyMin}
+                aria-label={`Decrease quantity of ${addon.name}`}
               >
                 <Minus className="w-4 h-4" />
               </Button>
-              <span className="w-8 text-center">{quantity}</span>
+              <span className="w-8 text-center" aria-label={`Current quantity: ${quantity}`}>{quantity}</span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={incrementQuantity}
-                disabled={quantity >= addon.qtyMax}
+                disabled={isAtMaxQuantity}
+                aria-label={`Increase quantity of ${addon.name}`}
+                aria-describedby={incrementError ? 'quantity-error' : undefined}
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -186,17 +203,33 @@ export function AddonModal({
           </div>
 
           {showMaxQuantityWarning && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-sm text-yellow-800">
-                <strong>Maximum quantity reached:</strong> {addon.qtyMax} is the maximum number of {addon.name.toLowerCase()} units supported by this system.
-              </p>
+            <div 
+              id="quantity-error"
+              className="bg-red-50 border border-red-200 rounded-lg p-3"
+              role="alert"
+              aria-live="polite"
+            >
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" aria-hidden="true" />
+                <p className="text-sm text-red-800">
+                  <strong>Cannot increase quantity:</strong> {incrementError}
+                </p>
+              </div>
             </div>
           )}
 
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Include in my package</label>
-            <Switch checked={include} onCheckedChange={setInclude} />
+            <label htmlFor="include-switch" className="text-sm font-medium">Include in my package</label>
+            <Switch 
+              id="include-switch"
+              checked={include} 
+              onCheckedChange={setInclude}
+              aria-describedby="include-description"
+            />
           </div>
+          <p id="include-description" className="sr-only">
+            Toggle to include or exclude this add-on from your package
+          </p>
 
           {include && quantity > 0 && (
             <div className="bg-primary/5 rounded-lg p-3">

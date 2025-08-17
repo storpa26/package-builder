@@ -6,14 +6,19 @@ export interface SelectedAddon {
   quantity: number;
 }
 
+export interface AutoAppendedItem extends SelectedAddon {
+  reason: string;
+}
+
 export interface RuleValidation {
   inputsUsed: number;
   powerUsed: number;
   keypadsUsed: number;
   touchscreensUsed: number;
-  autoAppendedItems: SelectedAddon[];
+  autoAppendedItems: AutoAppendedItem[];
   violations: string[];
   warnings: string[];
+  canIncrement: (addonId: string, currentQty: number) => { allowed: boolean; reason?: string };
 }
 
 export interface CapacityLimits {
@@ -42,7 +47,8 @@ export class RulesEngine {
       touchscreensUsed: 0,
       autoAppendedItems: [],
       violations: [],
-      warnings: []
+      warnings: [],
+      canIncrement: (addonId: string, currentQty: number) => this.canIncrementQuantity(addonId, currentQty, selectedAddons)
     };
 
     // Calculate current usage
@@ -54,7 +60,9 @@ export class RulesEngine {
         validation.inputsUsed += selection.quantity;
       }
       
-      validation.powerUsed += addon.powerMilliAmps * selection.quantity;
+      // Handle undefined powerMilliAmps
+      const power = addon.powerMilliAmps || 0;
+      validation.powerUsed += power * selection.quantity;
       
       if (addon.type === 'keypad') {
         validation.keypadsUsed += selection.quantity;
@@ -80,30 +88,44 @@ export class RulesEngine {
       const existingExpanders = validation.autoAppendedItems.filter(item => item.id === 'expander').length;
       
       if (expandersNeeded > existingExpanders) {
+        const additionalExpanders = expandersNeeded - existingExpanders;
         validation.autoAppendedItems.push({
           id: 'expander',
-          quantity: expandersNeeded - existingExpanders
+          quantity: additionalExpanders,
+          reason: `Auto-added: inputs exceed on-board ${assumptions.onboardInputs}`
         });
         
         // Add power consumption from expanders
         const expanderAddon = this.getAddonById('expander');
         if (expanderAddon) {
-          validation.powerUsed += expanderAddon.powerMilliAmps * (expandersNeeded - existingExpanders);
+          const expanderPower = expanderAddon.powerMilliAmps || 0;
+          validation.powerUsed += expanderPower * additionalExpanders;
         }
       }
     }
   }
 
   private checkAdditionalPSU(validation: RuleValidation) {
-    const needsPSU = validation.powerUsed > assumptions.powerBudgetMilliAmps || 
-                     validation.touchscreensUsed > assumptions.touchscreenThreshold;
+    const powerExceeded = validation.powerUsed > assumptions.powerBudgetMilliAmps;
+    const touchscreenExceeded = validation.touchscreensUsed > assumptions.touchscreenThreshold;
+    const needsPSU = powerExceeded || touchscreenExceeded;
     
     if (needsPSU) {
       const existingPSUs = validation.autoAppendedItems.filter(item => item.id === 'psu').length;
       if (existingPSUs === 0) {
+        let reason = 'Auto-added: ';
+        if (powerExceeded && touchscreenExceeded) {
+          reason += `power budget exceeded (${validation.powerUsed}mA > ${assumptions.powerBudgetMilliAmps}mA) and touchscreen limit exceeded`;
+        } else if (powerExceeded) {
+          reason += `power budget exceeded (${validation.powerUsed}mA > ${assumptions.powerBudgetMilliAmps}mA)`;
+        } else {
+          reason += `touchscreen limit exceeded (${validation.touchscreensUsed} > ${assumptions.touchscreenThreshold})`;
+        }
+        
         validation.autoAppendedItems.push({
           id: 'psu',
-          quantity: 1
+          quantity: 1,
+          reason
         });
       }
     }
@@ -150,6 +172,107 @@ export class RulesEngine {
         threshold: assumptions.touchscreenThreshold
       }
     };
+  }
+
+  canIncrementQuantity(addonId: string, currentQty: number, selectedAddons: SelectedAddon[]): { allowed: boolean; reason?: string } {
+    const addon = this.getAddonById(addonId);
+    if (!addon) {
+      return { allowed: false, reason: 'Add-on not found' };
+    }
+
+    // Check per-item quantity limit
+    if (addon.qtyMax && currentQty >= addon.qtyMax) {
+      return { 
+        allowed: false, 
+        reason: `Maximum ${addon.qtyMax} ${addon.name.toLowerCase()} supported by this system` 
+      };
+    }
+
+    // Simulate the increment to check hard caps
+    const testAddons = selectedAddons.map(s => 
+      s.id === addonId ? { ...s, quantity: s.quantity + 1 } : s
+    );
+    if (!selectedAddons.find(s => s.id === addonId)) {
+      testAddons.push({ id: addonId, quantity: 1 });
+    }
+
+    // Calculate what the usage would be with the increment
+    let testInputsUsed = 0;
+    let testKeypadsUsed = 0;
+
+    testAddons.forEach(selection => {
+      const testAddon = this.getAddonById(selection.id);
+      if (!testAddon || testAddon.isAutoAppended) return;
+
+      if (testAddon.consumesInput) {
+        testInputsUsed += selection.quantity;
+      }
+      
+      if (testAddon.type === 'keypad') {
+        testKeypadsUsed += selection.quantity;
+      }
+    });
+
+    // Check hard caps
+    if (testInputsUsed > assumptions.inputLimit) {
+      return { 
+        allowed: false, 
+        reason: `Maximum ${assumptions.inputLimit} sensors supported. Would exceed limit.` 
+      };
+    }
+
+    if (testKeypadsUsed > assumptions.maxKeypads) {
+      return { 
+        allowed: false, 
+        reason: `Maximum ${assumptions.maxKeypads} keypads supported. Would exceed limit.` 
+      };
+    }
+
+    return { allowed: true };
+  }
+
+  generateCartPayload(selectedAddons: SelectedAddon[], context: Context): {
+    items: Array<{
+      id: string;
+      quantity: number;
+      reason?: string;
+      isAutoAppended: boolean;
+    }>;
+    estimatedTotal: number;
+  } {
+    const validation = this.validateSelection(selectedAddons);
+    const items: Array<{
+      id: string;
+      quantity: number;
+      reason?: string;
+      isAutoAppended: boolean;
+    }> = [];
+
+    // Add user-selected items
+    selectedAddons.forEach(selection => {
+      const addon = this.getAddonById(selection.id);
+      if (addon && !addon.isAutoAppended) {
+        items.push({
+          id: selection.id,
+          quantity: selection.quantity,
+          isAutoAppended: false
+        });
+      }
+    });
+
+    // Add auto-appended items with reasons
+    validation.autoAppendedItems.forEach(item => {
+      items.push({
+        id: item.id,
+        quantity: item.quantity,
+        reason: item.reason,
+        isAutoAppended: true
+      });
+    });
+
+    const estimatedTotal = this.calculateTotal(selectedAddons, context);
+
+    return { items, estimatedTotal };
   }
 
   calculateTotal(selectedAddons: SelectedAddon[], context: Context): number {
