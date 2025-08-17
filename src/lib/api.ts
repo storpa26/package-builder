@@ -102,19 +102,41 @@ class WooCommerceAPI {
 
   /** Fetch products with tag/category "alarm-addon" */
   async getAlarmAddonProducts(perPage = 100): Promise<WooProduct[]> {
-    // Try by tag slug
-    let products = await this.getProducts({ tag: 'alarm-addon', per_page: perPage });
-    if (products.length > 0) return products;
-
-    // Try by tag ID
-    const tagId = await this.resolveTagIdBySlug('alarm-addon');
-    if (tagId) {
-      products = await this.getProducts({ tag: String(tagId), per_page: perPage });
-      if (products.length > 0) return products;
+    try {
+      const tagId = await this.resolveTagIdBySlug('alarm-addon');
+      if (!tagId) {
+        console.warn('Tag "alarm-addon" not found, returning empty array');
+        return [];
+      }
+      return this.getProducts({ tag: tagId.toString(), per_page: perPage });
+    } catch (error) {
+      console.error('Failed to fetch alarm addon products:', error);
+      throw error;
     }
+  }
 
-    // Fallback: try by category slug
-    return this.getProducts({ category: 'alarm-addon', per_page: perPage });
+  async getBaseAlarmProduct(): Promise<WooProduct | null> {
+    try {
+      const products = await this.getProducts({ slug: 'hybrid-wireless-alarm-system', per_page: 1 });
+      return products.length > 0 ? products[0] : null;
+    } catch (error) {
+      console.error('Failed to fetch base alarm product:', error);
+      throw error;
+    }
+  }
+
+  async getAutoRequiredProducts(perPage = 100): Promise<WooProduct[]> {
+    try {
+      const tagId = await this.resolveTagIdBySlug('alarm-auto-required');
+      if (!tagId) {
+        console.warn('Tag "alarm-auto-required" not found, returning empty array');
+        return [];
+      }
+      return this.getProducts({ tag: tagId.toString(), per_page: perPage });
+    } catch (error) {
+      console.error('Failed to fetch auto-required products:', error);
+      throw error;
+    }
   }
 
   async getCart(): Promise<WooCart> {

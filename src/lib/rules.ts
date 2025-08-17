@@ -30,9 +30,11 @@ export interface CapacityLimits {
 
 export class RulesEngine {
   private addons: Addon[];
+  private basePrice?: Record<Context, number>;
   
-  constructor(addons: Addon[]) {
+  constructor(addons: Addon[], basePrice?: Record<Context, number>) {
     this.addons = addons;
+    this.basePrice = basePrice;
   }
 
   private getAddonById(id: string): Addon | undefined {
@@ -277,7 +279,7 @@ export class RulesEngine {
 
   calculateTotal(selectedAddons: SelectedAddon[], context: Context): number {
     const validation = this.validateSelection(selectedAddons);
-    let total = assumptions.basePrice[context];
+    let total = this.basePrice ? this.basePrice[context] : assumptions.basePrice[context];
 
     // Add selected addons
     selectedAddons.forEach(selection => {

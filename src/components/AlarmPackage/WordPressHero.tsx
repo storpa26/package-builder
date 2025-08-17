@@ -1,7 +1,11 @@
-import { Shield, CheckCircle, Smartphone } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Shield, CheckCircle, Smartphone, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Context } from '@/lib/config';
+import type { WooProduct } from '@/types';
+import { wooApi } from '@/lib/api';
+import { assumptions } from '@/data/assumptions';
 
 interface HeroProps {
   context: Context;
@@ -11,6 +15,50 @@ interface HeroProps {
 }
 
 export function Hero({ context, basePrice, onGetPackage, onGetQuote }: HeroProps) {
+  const [baseProduct, setBaseProduct] = useState<WooProduct | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchBaseProduct = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const product = await wooApi.getBaseAlarmProduct();
+        setBaseProduct(product);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch base product:', err);
+        setError('Failed to load product information');
+        setIsLoading(false);
+      }
+    };
+
+    fetchBaseProduct();
+  }, []);
+
+  // Get product data - use WooCommerce data if available, fallback to static
+  const productName = baseProduct?.name || 'Hybrid Wireless Alarm System';
+  const productDescription = baseProduct?.short_description ? 
+    baseProduct.short_description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() :
+    'Protect what matters most with our expandable wireless security system. Professional installation, 2-year workmanship warranty, and 24/7 monitoring ready.';
+  const productPrice = baseProduct ? 
+    (parseFloat(baseProduct.prices.price) / (10 ** baseProduct.prices.currency_minor_unit)) : 
+    basePrice;
+
+  if (isLoading) {
+    return (
+      <section className="relative bg-background py-16 px-4 overflow-hidden">
+        <div className="container mx-auto max-w-6xl relative">
+          <div className="flex justify-center items-center py-16">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <span className="ml-2 text-muted-foreground">Loading product information...</span>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="relative bg-background py-16 px-4 overflow-hidden">
       {/* Background gradient */}
@@ -26,20 +74,19 @@ export function Hero({ context, basePrice, onGetPackage, onGetQuote }: HeroProps
               </Badge>
               
               <h1 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight">
-                Hybrid Wireless Alarm System
+                {productName}
                 <span className="text-primary block">(Installed)</span>
               </h1>
               
               <p className="text-xl text-muted-foreground max-w-lg">
-                Protect what matters most with our expandable wireless security system. 
-                Professional installation, 2-year workmanship warranty, and 24/7 monitoring ready.
+                {productDescription}
               </p>
             </div>
 
             {/* Price */}
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="px-4 py-2 text-2xl font-bold border-primary/30 text-primary bg-primary/5">
-                From ${basePrice.toLocaleString()} installed
+                From ${productPrice.toLocaleString()} installed
               </Badge>
               <span className="text-sm text-muted-foreground">
                 {context === 'residential' ? 'Residential' : 

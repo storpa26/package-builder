@@ -31,6 +31,8 @@ export function AddOnsSection({
   const [selectedAddon, setSelectedAddon] = useState<Addon | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [addonProducts, setAddonProducts] = useState<Addon[]>([]);
+  const [autoRequiredProducts, setAutoRequiredProducts] = useState<Addon[]>([]);
+  const [baseProductPrice, setBaseProductPrice] = useState<Record<Context, number> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,16 +43,29 @@ export function AddOnsSection({
         setIsLoading(true);
         setError(null);
         
-        // Fetch products tagged as "addon-only"
-        // Fetch products tagged as "alarm-addon"
-        const wooProducts = await wooApi.getAlarmAddonProducts();
+        // Fetch base product for pricing
+        const baseProduct = await wooApi.getBaseAlarmProduct();
+        if (baseProduct) {
+          const basePrice = parseFloat(baseProduct.prices.price) / (10 ** baseProduct.prices.currency_minor_unit);
+          const basePricing = {
+            residential: basePrice,
+            retail: basePrice * 1.15,
+            office: basePrice * 1.15,
+            warehouse: basePrice * 1.3
+          };
+          setBaseProductPrice(basePricing);
+        }
         
-        // Map WooCommerce products to local Addon type
+        // Fetch regular add-on products
+        const wooProducts = await wooApi.getAlarmAddonProducts();
         const mappedAddons = mapWooProductsToAddons(wooProducts);
         
-        // Combine with auto-appended items from static data
-        const autoAppendedAddons = staticAddons.filter(addon => addon.isAutoAppended);
-        setAddonProducts([...mappedAddons, ...autoAppendedAddons]);
+        // Fetch auto-required products
+        const autoRequiredWooProducts = await wooApi.getAutoRequiredProducts();
+        const mappedAutoRequired = mapWooProductsToAddons(autoRequiredWooProducts, true);
+        
+        setAddonProducts([...mappedAddons, ...mappedAutoRequired]);
+        setAutoRequiredProducts(mappedAutoRequired);
         
         setIsLoading(false);
       } catch (err) {
@@ -59,7 +74,9 @@ export function AddOnsSection({
         setIsLoading(false);
         
         // Fallback to static data if API fails
-        setAddonProducts(staticAddons);
+        const autoAppendedAddons = staticAddons.filter(addon => addon.isAutoAppended);
+        setAddonProducts([...staticAddons.filter(addon => !addon.isAutoAppended), ...autoAppendedAddons]);
+        setAutoRequiredProducts(autoAppendedAddons);
       }
     };
 
@@ -67,7 +84,7 @@ export function AddOnsSection({
   }, []);
 
   // Map WooCommerce products to local Addon type
-  const mapWooProductsToAddons = (products: WooProduct[]): Addon[] => {
+  const mapWooProductsToAddons = (products: WooProduct[], isAutoAppended: boolean = false): Addon[] => {
     return products.map(product => {
       // Check if meta_data exists, if not use an empty array
       const metaData = product.meta_data || [];
@@ -166,8 +183,18 @@ function extractBullets(html: string): string[] {
       if (officePriceMeta) unitPrice.office = Number(officePriceMeta.value);
       if (warehousePriceMeta) unitPrice.warehouse = Number(warehousePriceMeta.value);
       
+      // Map WooCommerce slugs to expected IDs for auto-appended items
+      let mappedId = product.slug;
+      if (isAutoAppended) {
+        if (product.slug === 'input-expander') {
+          mappedId = 'expander';
+        } else if (product.slug === 'additional-power-supply') {
+          mappedId = 'psu';
+        }
+      }
+
       return {
-        id: product.slug,
+        id: mappedId,
         name: product.name,
         type: type as 'sensor' | 'keypad' | 'controller' | 'psu' | 'expander' | 'accessory',
         consumesInput,
@@ -178,12 +205,12 @@ function extractBullets(html: string): string[] {
         qtyMin,
         qtyMax,
         isTouchscreen,
-        isAutoAppended: false // API products are never auto-appended
+        isAutoAppended
       };
     });
   };
 
-  const rulesEngine = new RulesEngine(addonProducts);
+  const rulesEngine = new RulesEngine(addonProducts, baseProductPrice || undefined);
   const validation = rulesEngine.validateSelection(selectedAddons);
   const capacityLimits = rulesEngine.getCapacityLimits(selectedAddons);
   
@@ -360,7 +387,7 @@ function extractBullets(html: string): string[] {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Base package:</span>
-                    <span>{formatCurrency(assumptions.basePrice[context])}</span>
+                    <span>{formatCurrency(baseProductPrice ? baseProductPrice[context] : assumptions.basePrice[context])}</span>
                   </div>
                   
                   {selectedAddons.length > 0 && (
