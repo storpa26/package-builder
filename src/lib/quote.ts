@@ -16,19 +16,12 @@ export function sendQuote(payload: QuotePayload): Promise<void> {
   // This is a stub function that would integrate with your actual quote system
   // Could be Make.com webhook, FluentForm, Elementor, or direct form submission
   
-  console.log('Quote Request Payload:', JSON.stringify(payload, null, 2));
-  
   // In a real implementation, this would be:
   // return fetch('/api/quote', { method: 'POST', body: JSON.stringify(payload) })
   // or webhook call to Make.com
   // or integration with your CRM/quote system
   
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      alert(`Quote request submitted!\nEstimated Total: $${payload.estimatedTotal.toLocaleString()}\n\nThis would normally go to your quote/CRM system.`);
-      resolve();
-    }, 500);
-  });
+  return Promise.resolve();
 }
 
 export function formatCurrency(amount: number): string {

@@ -20,9 +20,7 @@ const inclusions = [
 
 const contextBestFor: Record<Context, string> = {
   residential: 'Perfect for homes up to 200m² with standard security needs',
-  retail: 'Ideal for small shops and cafes with customer entry points',
-  office: 'Great for professional offices with staff access control',
-  warehouse: 'Designed for larger spaces with perimeter protection'
+  retail: 'Ideal for small shops and cafes with customer entry points'
 };
 
 export function PackageInclusions({ context }: PackageInclusionsProps) {

@@ -115,7 +115,12 @@ export function AddOnsSection({
         
         return false;
       });
-      
+
+      // Store WooCommerce product in map for modal access
+      if (staticAddon) {
+        setWooProductMap(prev => new Map(prev.set(staticAddon.id, product)));
+      }
+
       // Extract addon type from meta data or fallback to static data
       const typeMetaData = metaData.find(meta => meta.key === '_addon_type');
       const type = typeMetaData?.value || staticAddon?.type || 'accessory';
@@ -251,14 +256,24 @@ function extractBullets(html: string): string[] {
     setIsModalOpen(true);
   };
 
-  const handleSaveSelection = (quantity: number, include: boolean) => {
+  const handleModalSave = (quantity: number, include: boolean) => {
     if (!selectedAddon) return;
-
-    const updatedAddons = selectedAddons.filter(s => s.id !== selectedAddon.id);
+    
+    const updatedAddons = [...selectedAddons];
+    const existingIndex = updatedAddons.findIndex(a => a.id === selectedAddon.id);
+    
     if (include && quantity > 0) {
-      updatedAddons.push({ id: selectedAddon.id, quantity });
+      if (existingIndex >= 0) {
+        updatedAddons[existingIndex] = { id: selectedAddon.id, quantity };
+      } else {
+        updatedAddons.push({ id: selectedAddon.id, quantity });
+      }
+    } else {
+      if (existingIndex >= 0) {
+        updatedAddons.splice(existingIndex, 1);
+      }
     }
-
+    
     onUpdateAddons(updatedAddons);
   };
 
@@ -498,12 +513,12 @@ function extractBullets(html: string): string[] {
   // Loading state
   if (isLoading) {
     return (
-      <section className="py-16 px-4">
+      <section className="py-8 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h2 className="text-3xl font-bold mb-4">Add-Ons & Upgrades</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Loading available add-ons...
+              Customize your security system with additional sensors and features
             </p>
           </div>
           <div className="flex justify-center items-center py-16">
@@ -696,12 +711,13 @@ function extractBullets(html: string): string[] {
 
         <AddonModal
           addon={selectedAddon}
+          wooProduct={selectedAddon ? (wooProductMap.get(selectedAddon.id) || null) : null}
           context={context}
           isOpen={isModalOpen}
-          currentQuantity={selectedAddon ? getSelectedQuantity(selectedAddon.id) : 0}
+          currentQuantity={getSelectedQuantity(selectedAddon?.id || '')}
           validation={validation}
           onClose={() => setIsModalOpen(false)}
-          onSave={handleSaveSelection}
+          onSave={handleModalSave}
         />
       </div>
     </section>

@@ -28,7 +28,6 @@ export function Hero({ context, basePrice, onGetPackage, onGetQuote }: HeroProps
         setBaseProduct(product);
         setIsLoading(false);
       } catch (err) {
-        console.error('Failed to fetch base product:', err);
         setError('Failed to load product information');
         setIsLoading(false);
       }
@@ -89,31 +88,8 @@ export function Hero({ context, basePrice, onGetPackage, onGetQuote }: HeroProps
                 From ${productPrice.toLocaleString()} installed
               </Badge>
               <span className="text-sm text-muted-foreground">
-                {context === 'residential' ? 'Residential' : 
-                 context === 'retail' ? 'Small Retail' :
-                 context === 'office' ? 'Office' : 'Warehouse'} package
+                {context === 'residential' ? 'Residential' : 'Small Retail'} package
               </span>
-            </div>
-
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                size="lg" 
-                onClick={onGetPackage}
-                className="bg-primary hover:bg-primary-hover text-primary-foreground font-semibold"
-              >
-                <Shield className="w-5 h-5 mr-2" />
-                Get This Package
-              </Button>
-              
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={onGetQuote}
-                className="border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground"
-              >
-                Get a Free Quote
-              </Button>
             </div>
 
             {/* Quick benefits */}
@@ -136,53 +112,118 @@ export function Hero({ context, basePrice, onGetPackage, onGetQuote }: HeroProps
           {/* Illustration */}
           <div className="flex justify-center lg:justify-end">
             <div className="relative">
-              {/* Main illustration */}
-              <svg 
-                width="400" 
-                height="300" 
-                viewBox="0 0 400 300" 
-                className="drop-shadow-lg"
-                fill="none"
-              >
-                {/* House outline */}
-                <rect x="50" y="120" width="180" height="120" rx="8" fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth="2"/>
-                
-                {/* Roof */}
-                <path d="M40 120 L140 60 L240 120 Z" fill="hsl(var(--muted))" stroke="hsl(var(--border))" strokeWidth="2"/>
-                
-                {/* Door */}
-                <rect x="120" y="180" width="40" height="60" rx="4" fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth="1"/>
-                
-                {/* Windows */}
-                <rect x="70" y="140" width="30" height="25" rx="2" fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth="1"/>
-                <rect x="180" y="140" width="30" height="25" rx="2" fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth="1"/>
-                
-                {/* Security sensors */}
-                <circle cx="85" cy="135" r="3" fill="hsl(var(--primary))"/>
-                <circle cx="195" cy="135" r="3" fill="hsl(var(--primary))"/>
-                <circle cx="140" cy="175" r="3" fill="hsl(var(--primary))"/>
-                
-                {/* Control panel */}
-                <rect x="260" y="100" width="60" height="40" rx="6" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="2"/>
-                <circle cx="285" cy="115" r="2" fill="hsl(var(--primary))"/>
-                <circle cx="295" cy="115" r="2" fill="hsl(var(--secondary))"/>
-                <circle cx="305" cy="115" r="2" fill="hsl(var(--accent))"/>
-                
-                {/* Wireless signals */}
-                <g stroke="hsl(var(--primary))" strokeWidth="1" fill="none" opacity="0.6">
-                  <path d="M85 130 Q140 110 260 110"/>
-                  <path d="M195 130 Q200 110 260 115"/>
-                  <path d="M140 170 Q200 150 260 125"/>
-                </g>
-                
-                {/* Phone with app */}
-                <rect x="340" y="180" width="40" height="70" rx="8" fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth="2"/>
-                <rect x="345" y="190" width="30" height="20" rx="2" fill="hsl(var(--primary))" opacity="0.8"/>
-                <rect x="345" y="215" width="30" height="3" rx="1" fill="hsl(var(--muted-foreground))"/>
-                <rect x="345" y="220" width="20" height="3" rx="1" fill="hsl(var(--muted-foreground))"/>
-                <circle cx="360" cy="235" r="8" fill="hsl(var(--secondary))" opacity="0.8"/>
-                <Smartphone className="w-4 h-4 text-secondary-foreground" x="356" y="231"/>
-              </svg>
+              {/* Product Image or Fallback Illustration */}
+              {baseProduct?.images && baseProduct.images.length > 0 ? (
+                <div className="relative">
+                  <img 
+                    src={baseProduct.images[0].src}
+                    alt={baseProduct.images[0].alt || productName}
+                    className="w-full max-w-md h-auto rounded-lg shadow-lg"
+                    onError={(e) => {
+                      // Fallback to SVG illustration if image fails to load
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'block';
+                    }}
+                  />
+                  {/* Fallback SVG (hidden by default) */}
+                  <svg 
+                    width="400" 
+                    height="300" 
+                    viewBox="0 0 400 300" 
+                    className="drop-shadow-lg"
+                    fill="none"
+                    style={{ display: 'none' }}
+                  >
+                    {/* House outline */}
+                    <rect x="50" y="120" width="180" height="120" rx="8" fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth="2"/>
+                    
+                    {/* Roof */}
+                    <path d="M40 120 L140 60 L240 120 Z" fill="hsl(var(--muted))" stroke="hsl(var(--border))" strokeWidth="2"/>
+                    
+                    {/* Door */}
+                    <rect x="120" y="180" width="40" height="60" rx="4" fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth="1"/>
+                    
+                    {/* Windows */}
+                    <rect x="70" y="140" width="30" height="25" rx="2" fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth="1"/>
+                    <rect x="180" y="140" width="30" height="25" rx="2" fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth="1"/>
+                    
+                    {/* Security sensors */}
+                    <circle cx="85" cy="135" r="3" fill="hsl(var(--primary))"/>
+                    <circle cx="195" cy="135" r="3" fill="hsl(var(--primary))"/>
+                    <circle cx="140" cy="175" r="3" fill="hsl(var(--primary))"/>
+                    
+                    {/* Control panel */}
+                    <rect x="260" y="100" width="60" height="40" rx="6" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="2"/>
+                    <circle cx="285" cy="115" r="2" fill="hsl(var(--primary))"/>
+                    <circle cx="295" cy="115" r="2" fill="hsl(var(--secondary))"/>
+                    <circle cx="305" cy="115" r="2" fill="hsl(var(--accent))"/>
+                    
+                    {/* Wireless signals */}
+                    <g stroke="hsl(var(--primary))" strokeWidth="1" fill="none" opacity="0.6">
+                      <path d="M85 130 Q140 110 260 110"/>
+                      <path d="M195 130 Q200 110 260 115"/>
+                      <path d="M140 170 Q200 150 260 125"/>
+                    </g>
+                    
+                    {/* Phone with app */}
+                    <rect x="340" y="180" width="40" height="70" rx="8" fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth="2"/>
+                    <rect x="345" y="190" width="30" height="20" rx="2" fill="hsl(var(--primary))" opacity="0.8"/>
+                    <rect x="345" y="215" width="30" height="3" rx="1" fill="hsl(var(--muted-foreground))"/>
+                    <rect x="345" y="220" width="20" height="3" rx="1" fill="hsl(var(--muted-foreground))"/>
+                    <circle cx="360" cy="235" r="8" fill="hsl(var(--secondary))" opacity="0.8"/>
+                    <Smartphone className="w-4 h-4 text-secondary-foreground" x="356" y="231"/>
+                  </svg>
+                </div>
+              ) : (
+                /* Original SVG illustration as fallback */
+                <svg 
+                  width="400" 
+                  height="300" 
+                  viewBox="0 0 400 300" 
+                  className="drop-shadow-lg"
+                  fill="none"
+                >
+                  {/* House outline */}
+                  <rect x="50" y="120" width="180" height="120" rx="8" fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth="2"/>
+                  
+                  {/* Roof */}
+                  <path d="M40 120 L140 60 L240 120 Z" fill="hsl(var(--muted))" stroke="hsl(var(--border))" strokeWidth="2"/>
+                  
+                  {/* Door */}
+                  <rect x="120" y="180" width="40" height="60" rx="4" fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth="1"/>
+                  
+                  {/* Windows */}
+                  <rect x="70" y="140" width="30" height="25" rx="2" fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth="1"/>
+                  <rect x="180" y="140" width="30" height="25" rx="2" fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth="1"/>
+                  
+                  {/* Security sensors */}
+                  <circle cx="85" cy="135" r="3" fill="hsl(var(--primary))"/>
+                  <circle cx="195" cy="135" r="3" fill="hsl(var(--primary))"/>
+                  <circle cx="140" cy="175" r="3" fill="hsl(var(--primary))"/>
+                  
+                  {/* Control panel */}
+                  <rect x="260" y="100" width="60" height="40" rx="6" fill="hsl(var(--card))" stroke="hsl(var(--primary))" strokeWidth="2"/>
+                  <circle cx="285" cy="115" r="2" fill="hsl(var(--primary))"/>
+                  <circle cx="295" cy="115" r="2" fill="hsl(var(--secondary))"/>
+                  <circle cx="305" cy="115" r="2" fill="hsl(var(--accent))"/>
+                  
+                  {/* Wireless signals */}
+                  <g stroke="hsl(var(--primary))" strokeWidth="1" fill="none" opacity="0.6">
+                    <path d="M85 130 Q140 110 260 110"/>
+                    <path d="M195 130 Q200 110 260 115"/>
+                    <path d="M140 170 Q200 150 260 125"/>
+                  </g>
+                  
+                  {/* Phone with app */}
+                  <rect x="340" y="180" width="40" height="70" rx="8" fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth="2"/>
+                  <rect x="345" y="190" width="30" height="20" rx="2" fill="hsl(var(--primary))" opacity="0.8"/>
+                  <rect x="345" y="215" width="30" height="3" rx="1" fill="hsl(var(--muted-foreground))"/>
+                  <rect x="345" y="220" width="20" height="3" rx="1" fill="hsl(var(--muted-foreground))"/>
+                  <circle cx="360" cy="235" r="8" fill="hsl(var(--secondary))" opacity="0.8"/>
+                  <Smartphone className="w-4 h-4 text-secondary-foreground" x="356" y="231"/>
+                </svg>
+              )}
               
               {/* Floating badges */}
               <div className="absolute -top-4 -right-4 animate-pulse">

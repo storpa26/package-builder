@@ -105,12 +105,10 @@ class WooCommerceAPI {
     try {
       const tagId = await this.resolveTagIdBySlug('alarm-addon');
       if (!tagId) {
-        console.warn('Tag "alarm-addon" not found, returning empty array');
         return [];
       }
       return this.getProducts({ tag: tagId.toString(), per_page: perPage });
     } catch (error) {
-      console.error('Failed to fetch alarm addon products:', error);
       throw error;
     }
   }
@@ -120,7 +118,6 @@ class WooCommerceAPI {
       const products = await this.getProducts({ slug: 'hybrid-wireless-alarm-system', per_page: 1 });
       return products.length > 0 ? products[0] : null;
     } catch (error) {
-      console.error('Failed to fetch base alarm product:', error);
       throw error;
     }
   }
@@ -129,12 +126,10 @@ class WooCommerceAPI {
     try {
       const tagId = await this.resolveTagIdBySlug('alarm-auto-required');
       if (!tagId) {
-        console.warn('Tag "alarm-auto-required" not found, returning empty array');
         return [];
       }
       return this.getProducts({ tag: tagId.toString(), per_page: perPage });
     } catch (error) {
-      console.error('Failed to fetch auto-required products:', error);
       throw error;
     }
   }
@@ -223,7 +218,6 @@ class WooCommerceAPI {
         body: JSON.stringify(payload),
       });
     } catch (error) {
-      console.warn('Validation endpoint not available, using fallback:', error);
       return fallbackResult;
     }
   }

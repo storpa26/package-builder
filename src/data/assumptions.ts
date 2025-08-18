@@ -1,4 +1,4 @@
-export type Context = 'residential' | 'retail' | 'office' | 'warehouse';
+export type Context = 'residential' | 'retail';
 
 export interface ContextAssumptions {
   basePrice: Record<Context, number>;
@@ -13,15 +13,11 @@ export interface ContextAssumptions {
 export const assumptions: ContextAssumptions = {
   basePrice: { 
     residential: 1295, 
-    retail: 1495, 
-    office: 1495, 
-    warehouse: 1795 
+    retail: 1495
   },
   includedRunMeters: { 
     residential: 20, 
-    retail: 25, 
-    office: 25, 
-    warehouse: 50 
+    retail: 25
   },
   powerBudgetMilliAmps: 1000,
   inputLimit: 32,
@@ -32,14 +28,10 @@ export const assumptions: ContextAssumptions = {
 
 export const contextLabels: Record<Context, string> = {
   residential: 'Residential',
-  retail: 'Small Retail',
-  office: 'Office',
-  warehouse: 'Warehouse'
+  retail: 'Small Retail'
 };
 
 export const defaultChips: Record<Context, string[]> = {
   residential: ['≤200 m²', 'Single storey', 'Avg run 15–20 m'],
-  retail: ['≤300 m²', 'Ground floor', 'Avg run 20–25 m'],
-  office: ['≤500 m²', 'Multi-level', 'Avg run 20–25 m'],
-  warehouse: ['≤1000 m²', 'High ceiling', 'Avg run 30–50 m']
+  retail: ['≤300 m²', 'Ground floor', 'Avg run 20–25 m']
 };

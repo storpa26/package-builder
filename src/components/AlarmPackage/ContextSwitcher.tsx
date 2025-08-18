@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Home, Store, Building, Warehouse } from 'lucide-react';
+import { Settings, Home, Store } from 'lucide-react';
 import { Context, contextLabels, defaultChips } from '@/data/assumptions';
 
 interface ContextSwitcherProps {
@@ -12,9 +12,7 @@ interface ContextSwitcherProps {
 
 const contextIcons: Record<Context, React.ElementType> = {
   residential: Home,
-  retail: Store,
-  office: Building,
-  warehouse: Warehouse
+  retail: Store
 };
 
 export function ContextSwitcher({ 
@@ -23,7 +21,7 @@ export function ContextSwitcher({
   assumptions,
   className 
 }: ContextSwitcherProps) {
-  const contexts: Context[] = ['residential', 'retail', 'office', 'warehouse'];
+  const contexts: Context[] = ['residential', 'retail'];
 
   return (
     <div className={`bg-muted/30 rounded-lg p-6 ${className}`}>
@@ -33,7 +31,7 @@ export function ContextSwitcher({
           <h3 className="font-semibold">Property Type & Assumptions</h3>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {contexts.map(context => {
             const Icon = contextIcons[context];
             const isActive = context === currentContext;
@@ -64,9 +62,6 @@ export function ContextSwitcher({
               </Badge>
             ))}
           </div>
-          <Button variant="link" className="h-auto p-0 text-xs text-primary">
-            Change Answers (opens wizard)
-          </Button>
         </div>
 
         <details className="text-sm">

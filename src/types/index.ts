@@ -65,6 +65,12 @@ export interface WooProduct {
     currency_minor_unit: number;
   };
   slug: string;
+  images: Array<{
+    id: number;
+    src: string;
+    name: string;
+    alt: string;
+  }>;
   categories: Array<{
     id: number;
     name: string;

@@ -63,7 +63,6 @@ export default function WordPressAlarmPackage() {
         const products = await wooApi.getAlarmAddonProducts(50);
         setWooProducts(products);
       } catch (error) {
-        console.error('Failed to load products:', error);
         toast({
           title: "Failed to load products",
           description: "Using offline data instead.",
@@ -171,7 +170,7 @@ export default function WordPressAlarmPackage() {
 
       <PackageInclusions context={context} />
 
-      <div className="py-8 px-4">
+      <div className="py-4 px-4">
         <div className="container mx-auto max-w-6xl">
           <ContextSwitcher
             currentContext={context}
@@ -215,8 +214,6 @@ export function initAlarmConfigurator(
   overrides: Partial<{ context: Context; answers: Record<string, any> }> = {}
 ) {
   // This would be implemented with React.render in a real WordPress integration
-  console.log('Initializing alarm configurator in:', rootElement, 'with overrides:', overrides);
-  
   // TODO: Implement React.render when integrated with WordPress
   // ReactDOM.render(<WordPressAlarmPackage {...overrides} />, rootElement);
 }
