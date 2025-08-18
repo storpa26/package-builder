@@ -427,7 +427,6 @@ function extractBullets(html: string): string[] {
                   onClick={onAddToQuote}
                   className="w-full bg-primary hover:bg-primary-hover"
                   size="lg"
-                  disabled
                 >
                   Add to Quote
                 </Button>
