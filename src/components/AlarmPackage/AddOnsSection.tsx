@@ -12,6 +12,7 @@ import { Context, assumptions } from '@/data/assumptions';
 import { SelectedAddon, RulesEngine } from '@/lib/rules';
 import { formatCurrency } from '@/lib/quote';
 import { wooApi } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface AddOnsSectionProps {
   context: Context;
@@ -28,12 +29,16 @@ export function AddOnsSection({
   estimatedTotal,
   onAddToQuote 
 }: AddOnsSectionProps) {
+  const { toast } = useToast();
   const [selectedAddon, setSelectedAddon] = useState<Addon | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [addonProducts, setAddonProducts] = useState<Addon[]>([]);
   const [autoRequiredProducts, setAutoRequiredProducts] = useState<Addon[]>([]);
   const [baseProductPrice, setBaseProductPrice] = useState<Record<Context, number> | null>(null);
+  const [baseProduct, setBaseProduct] = useState<WooProduct | null>(null);
+  const [wooProductMap, setWooProductMap] = useState<Map<string, number>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch addon-only products from WooCommerce
@@ -44,9 +49,10 @@ export function AddOnsSection({
         setError(null);
         
         // Fetch base product for pricing
-        const baseProduct = await wooApi.getBaseAlarmProduct();
-        if (baseProduct) {
-          const basePrice = parseFloat(baseProduct.prices.price) / (10 ** baseProduct.prices.currency_minor_unit);
+        const baseProductData = await wooApi.getBaseAlarmProduct();
+        if (baseProductData) {
+          setBaseProduct(baseProductData);
+          const basePrice = parseFloat(baseProductData.prices.price) / (10 ** baseProductData.prices.currency_minor_unit);
           const basePricing = {
             residential: basePrice,
             retail: basePrice * 1.15,
@@ -248,6 +254,212 @@ function extractBullets(html: string): string[] {
     }).filter(Boolean);
   };
 
+  const handleAddToCart = async () => {
+    try {
+      setIsAddingToCart(true);
+      setError(null);
+
+      console.log('🛒 Starting cart operation...');
+      console.log('🛒 Selected addons:', selectedAddons);
+      console.log('🛒 Validation result:', validation);
+      
+      // Prepare items for WooCommerce cart
+      const cartItems = [];
+      
+      // Add base product (always included)
+      if (baseProduct) {
+        console.log('🛒 Adding base product:', baseProduct.id, baseProduct.name);
+        cartItems.push({
+          id: baseProduct.id,
+          quantity: 1,
+          meta: {
+            context: context,
+            package_type: 'base_system',
+            product_name: baseProduct.name
+          }
+        });
+      } else {
+        throw new Error('Base product not found');
+      }
+      
+      // Add selected add-ons (user selections)
+      console.log('🛒 Processing selected add-ons:', selectedAddons);
+      console.log('🛒 Available addon products:', addonProducts.map(a => ({ id: a.id, name: a.name, isAutoAppended: a.isAutoAppended })));
+      console.log('🛒 WooCommerce product map:', Array.from(wooProductMap.entries()));
+      
+      for (const selection of selectedAddons) {
+        console.log(`🛒 Processing selection: ${selection.id} x${selection.quantity}`);
+        const addon = addonProducts.find(a => a.id === selection.id && !a.isAutoAppended);
+        console.log(`🛒 Found addon:`, addon ? { id: addon.id, name: addon.name, isAutoAppended: addon.isAutoAppended } : 'NOT FOUND');
+        
+        if (addon) {
+          const wooProductId = wooProductMap.get(selection.id);
+          console.log(`🛒 Adding addon: ${addon.name} (ID: ${selection.id} → WooCommerce ID: ${wooProductId})`);
+          
+          if (wooProductId) {
+            cartItems.push({
+              id: wooProductId,
+              quantity: selection.quantity,
+              meta: {
+                addon_type: addon.type,
+                context: context,
+                product_name: addon.name,
+                user_selected: true
+              }
+            });
+          } else {
+            console.warn(`⚠️ No WooCommerce product ID found for addon: ${selection.id}`);
+            // Try to find by name matching as fallback
+            const fallbackAddon = addonProducts.find(a => a.name.toLowerCase().includes(addon.name.toLowerCase().split(' ')[0]));
+            if (fallbackAddon) {
+              console.log(`🛒 Using fallback addon:`, fallbackAddon.name);
+              // For now, we'll skip items without proper WooCommerce IDs
+              // In production, you'd want proper product mapping
+            }
+          }
+        } else {
+          console.warn(`⚠️ Addon not found in products list: ${selection.id}`);
+        }
+      }
+      
+      // Add auto-appended items (system requirements)
+      console.log('🛒 Processing auto-appended items:', validation.autoAppendedItems);
+      
+      for (const item of validation.autoAppendedItems) {
+        console.log(`🛒 Processing auto-required: ${item.id} x${item.quantity}`);
+        const addon = addonProducts.find(a => a.id === item.id);
+        console.log(`🛒 Found auto-required addon:`, addon ? { id: addon.id, name: addon.name } : 'NOT FOUND');
+        
+        if (addon) {
+          const wooProductId = wooProductMap.get(item.id);
+          console.log(`🛒 Adding auto-required: ${addon.name} (ID: ${item.id} → WooCommerce ID: ${wooProductId})`);
+          console.log(`🛒 Reason: ${item.reason}`);
+          
+          if (wooProductId) {
+            cartItems.push({
+              id: wooProductId,
+              quantity: item.quantity,
+              meta: {
+                auto_added: true,
+                reason: item.reason,
+                context: context,
+                product_name: addon.name
+              }
+            });
+          } else {
+            console.warn(`⚠️ No WooCommerce product ID found for auto-required: ${item.id}`);
+            // For auto-required items, we know the WooCommerce IDs
+            let hardcodedId = 0;
+            if (item.id === 'expander') {
+              hardcodedId = 2389; // Input Expander
+            } else if (item.id === 'psu') {
+              hardcodedId = 2390; // Additional PSU
+            }
+            
+            if (hardcodedId > 0) {
+              console.log(`🛒 Using hardcoded ID for ${item.id}: ${hardcodedId}`);
+              cartItems.push({
+                id: hardcodedId,
+                quantity: item.quantity,
+                meta: {
+                  auto_added: true,
+                  reason: item.reason,
+                  context: context,
+                  product_name: addon.name
+                }
+              });
+            } else {
+              // Try hardcoded mapping for common add-ons
+              const hardcodedAddonMap: Record<string, number> = {
+                'outpir': 2378, // Outdoor motion sensor
+                'tskp': 2381,   // Touchscreen keypad
+                'smoke': 2393,  // Smoke detector
+                'panic': 2385,  // Panic button
+                'glass': 2384,  // Glass break detector
+                'door': 2383,   // Door/window sensor
+                'keypad2': 2382 // Additional keypad
+              };
+              
+              const mappedId = hardcodedAddonMap[item.id];
+              if (mappedId) {
+                console.log(`🛒 Using hardcoded addon mapping for ${item.id}: ${mappedId}`);
+                cartItems.push({
+                  id: mappedId,
+                  quantity: item.quantity,
+                  meta: {
+                    auto_added: true,
+                    reason: item.reason,
+                    context: context,
+                    product_name: addon.name
+                  }
+                });
+              }
+            }
+          }
+        } else {
+          console.warn(`⚠️ Auto-required addon not found: ${item.id}`);
+        }
+      }
+      
+      console.log('🛒 Final cart items to add:', cartItems);
+      
+      if (cartItems.length === 0) {
+        throw new Error('No valid items to add to cart');
+      }
+      
+      // Add items to WooCommerce cart one by one for better error handling
+      let addedCount = 0;
+      for (const item of cartItems) {
+        try {
+          console.log(`🛒 Adding item ${addedCount + 1}/${cartItems.length}:`, item);
+          await wooApi.addItemsToCart([item]);
+          addedCount++;
+          console.log(`✅ Successfully added item ${addedCount}`);
+        } catch (itemError) {
+          console.error(`❌ Failed to add item:`, item, itemError);
+          // Continue with other items rather than failing completely
+        }
+      }
+      
+      if (addedCount === 0) {
+        throw new Error('Failed to add any items to cart');
+      }
+      
+      // Verify final cart state
+      const finalCart = await wooApi.getCart();
+      console.log('🛒 Final cart state:', finalCart);
+      
+      const itemCount = finalCart.items?.length || 0;
+      const totalPrice = finalCart.totals?.total_price || '0';
+      
+      // Show success message
+      toast({
+        title: "Items Added to Cart!",
+        description: `Successfully added ${addedCount} items. Cart total: ${totalPrice}`,
+      });
+      
+      // Redirect to cart page after a short delay
+      setTimeout(() => {
+        const cartUrl = window.location.origin.includes('localhost') 
+          ? 'https://cheapalarms.com.au/cart/' 
+          : '/cart/';
+        window.location.href = cartUrl;
+      }, 1500);
+       
+     } catch (err) {
+       console.error('❌ Cart operation failed:', err);
+       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+       setError(`Failed to add items to cart: ${errorMessage}`);
+       toast({
+         title: "Failed to Add Items",
+         description: `Error: ${errorMessage}. Please try again.`,
+         variant: "destructive",
+       });
+     } finally {
+       setIsAddingToCart(false);
+     }
+   };
+
   // Loading state
   if (isLoading) {
     return (
@@ -424,20 +636,20 @@ function extractBullets(html: string): string[] {
                 </div>
 
                 <Button 
-                  onClick={onAddToQuote}
-                  className="w-full bg-primary hover:bg-primary-hover"
+                  onClick={handleAddToCart}
+                  className="w-full bg-primary hover:bg-primary/90"
                   size="lg"
+                  disabled={validation.violations.length > 0 || isLoading || isAddingToCart}
                 >
-                  Add to Quote
+                  {isAddingToCart ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Adding to Cart...
+                    </>
+                  ) : (
+                    'Add to Cart'
+                  )}
                 </Button>
-                {/* <Button 
-                  onClick={onAddToQuote}
-                  className="w-full bg-primary hover:bg-primary-hover"
-                  size="lg"
-                  disabled={validation.violations.length > 0}
-                >
-                  Add to Quote
-                </Button> */}
 
                 <p className="text-xs text-muted-foreground text-center">
                   Final price may vary based on site conditions and installation requirements
