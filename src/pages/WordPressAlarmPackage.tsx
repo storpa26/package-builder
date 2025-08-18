@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+// Remove this line: import { useSearchParams } from 'react-router-dom';
 import { Hero } from '@/components/AlarmPackage/WordPressHero';
 import { PackageInclusions } from '@/components/AlarmPackage/PackageInclusions';
 import { ContextSwitcher } from '@/components/AlarmPackage/ContextSwitcher';
 import { AddOnsSection } from '@/components/AlarmPackage/AddOnsSection';
 import { TechSpecs } from '@/components/AlarmPackage/TechSpecs';
 import { InstallationProcess } from '@/components/AlarmPackage/InstallationProcess';
-import { StickyEstimator } from '@/components/AlarmPackage/StickyEstimator';
+import { StickyCartBar } from '@/components/AlarmPackage/StickyCartBar';
 import { config, type Context } from '@/lib/config';
 import { wooApi } from '@/lib/api';
 import { productIds } from '@/data/ids';
@@ -17,7 +17,14 @@ import { SelectedAddon, RulesEngine } from '@/lib/rules';
 import { useToast } from '@/hooks/use-toast';
 
 export default function WordPressAlarmPackage() {
-  const [searchParams] = useSearchParams();
+  // Replace useSearchParams with URLSearchParams
+  const getUrlParams = () => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search);
+    }
+    return new URLSearchParams();
+  };
+  
   const { toast } = useToast();
   
   // State management
@@ -29,30 +36,25 @@ export default function WordPressAlarmPackage() {
 
   // Initialize from URL parameters (wizard integration)
   useEffect(() => {
-    const contextParam = searchParams.get('context') as Context;
-    if (contextParam && ['residential', 'retail', 'office', 'warehouse'].includes(contextParam)) {
-      setContext(contextParam);
+    const searchParams = getUrlParams();
+    
+    // Get context from URL
+    const urlContext = searchParams.get('context') as Context;
+    if (urlContext && ['residential', 'retail'].includes(urlContext)) {
+      setContext(urlContext);
     }
-
-    // Parse wizard answers from URL
+    
+    // Get wizard answers from URL
     const answersParam = searchParams.get('answers');
     if (answersParam) {
       try {
-        const answers = JSON.parse(atob(answersParam)); // Base64 decode
+        const answers = JSON.parse(decodeURIComponent(answersParam));
         setWizardAnswers(answers);
-        
-        // Preselect add-ons based on answers
-        if (answers.hasOutdoorAccess) {
-          setSelectedAddons(prev => [...prev, { id: 'outpir', quantity: 2 }]);
-        }
-        if (answers.multiLevel) {
-          setSelectedAddons(prev => [...prev, { id: 'smoke', quantity: 2 }]);
-        }
       } catch (error) {
-        console.error('Failed to parse wizard answers:', error);
+        console.warn('Failed to parse wizard answers from URL:', error);
       }
     }
-  }, [searchParams]);
+  }, []);
 
   // Load WooCommerce products
   useEffect(() => {
@@ -192,18 +194,17 @@ export default function WordPressAlarmPackage() {
 
       <InstallationProcess />
 
-      <StickyEstimator
+      {/* Replace StickyEstimator with StickyCartBar */}
+      <StickyCartBar
         estimatedTotal={estimatedTotal}
         selectedAddons={selectedAddons}
-        autoAppendedItems={validation.autoAppendedItems}
         context={context}
         basePrice={basePrice}
-        onGetPackage={handleAddToCart}
-        className="lg:hidden"
+        onAddToCart={handleAddToCart}
       />
 
-      {/* Add some bottom padding for mobile sticky bar */}
-      <div className="h-20 lg:h-0" />
+      {/* Add bottom padding for sticky cart bar */}
+      <div className="h-20" />
     </div>
   );
 }

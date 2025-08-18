@@ -45,7 +45,8 @@ export function AddonModal({
   const totalPrice = price * quantity;
 
   const handleSave = () => {
-    onSave(include ? quantity : 0, include);
+    // Always save the current quantity (0 means remove)
+    onSave(quantity, quantity > 0);
     onClose();
   };
 
@@ -174,6 +175,21 @@ export function AddonModal({
         </Tabs>
 
         <div className="border-t pt-6 space-y-4">
+          {/* MOVE: Include toggle from footer to here - ABOVE quantity */}
+          <div className="flex items-center justify-between">
+            <label htmlFor="include-switch" className="text-sm font-medium">Include in my package</label>
+            <Switch 
+              id="include-switch"
+              checked={include} 
+              onCheckedChange={setInclude}
+              aria-describedby="include-description"
+            />
+          </div>
+          <p id="include-description" className="sr-only">
+            Toggle to include or exclude this add-on from your package
+          </p>
+
+          {/* Existing quantity controls stay here */}
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">
               Quantity {addon.qtyMax > 1 && <span className="text-xs text-muted-foreground">(max {addon.qtyMax})</span>}
@@ -218,35 +234,25 @@ export function AddonModal({
             </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <label htmlFor="include-switch" className="text-sm font-medium">Include in my package</label>
-            <Switch 
-              id="include-switch"
-              checked={include} 
-              onCheckedChange={setInclude}
-              aria-describedby="include-description"
-            />
-          </div>
-          <p id="include-description" className="sr-only">
-            Toggle to include or exclude this add-on from your package
-          </p>
-
-          {include && quantity > 0 && (
-            <div className="bg-primary/5 rounded-lg p-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Total for this item:</span>
-                <span className="font-semibold text-lg">{formatCurrency(totalPrice)}</span>
+          {/* Footer - REMOVE the toggle from here since it's moved above */}
+          <div className="space-y-4">
+            {include && quantity > 0 && (
+              <div className="bg-primary/5 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Total for this item:</span>
+                  <span className="font-semibold text-lg">{formatCurrency(totalPrice)}</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <Button 
-            onClick={handleSave} 
-            className="w-full bg-primary hover:bg-primary-hover"
-            size="lg"
-          >
-            Save Selection
-          </Button>
+            <Button 
+              onClick={handleSave} 
+              className="w-full bg-primary hover:bg-primary-hover"
+              size="lg"
+            >
+              Save Selection
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

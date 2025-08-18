@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss";
 
 export default {
 	darkMode: ["class"],
-	important: true,
+	important: true, // Keep this simple - it works!
 	content: [
 		"./pages/**/*.{ts,tsx}",
 		"./components/**/*.{ts,tsx}",

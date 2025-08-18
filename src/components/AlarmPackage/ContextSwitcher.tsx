@@ -31,7 +31,7 @@ export function ContextSwitcher({
           <h3 className="font-semibold">Property Type & Assumptions</h3>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex justify-center gap-3">
           {contexts.map(context => {
             const Icon = contextIcons[context];
             const isActive = context === currentContext;
@@ -41,13 +41,13 @@ export function ContextSwitcher({
                 key={context}
                 variant={isActive ? "default" : "outline"}
                 className={`
-                  h-auto flex-col gap-2 p-4
+                  h-24 w-24 flex-col gap-2 p-4
                   ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-primary/5'}
                 `}
                 onClick={() => onContextChange(context)}
               >
                 <Icon className="w-5 h-5" />
-                <span className="text-sm font-medium">{contextLabels[context]}</span>
+                <span className="text-sm font-medium text-center leading-tight">{contextLabels[context]}</span>
               </Button>
             );
           })}

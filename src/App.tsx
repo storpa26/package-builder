@@ -10,20 +10,11 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      {/* Change BrowserRouter to HashRouter here */}
-      <HashRouter>
-        <Routes>
-          <Route path="/" element={<WordPressAlarmPackage />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </HashRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <div className="alarm-package-app">
+      <WordPressAlarmPackage />
+    </div>
+  );
+}
 export default App;
