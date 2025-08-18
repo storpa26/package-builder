@@ -189,14 +189,29 @@ function extractBullets(html: string): string[] {
       if (officePriceMeta) unitPrice.office = Number(officePriceMeta.value);
       if (warehousePriceMeta) unitPrice.warehouse = Number(warehousePriceMeta.value);
       
-      // Map WooCommerce slugs to expected IDs for auto-appended items
+      // Map WooCommerce slugs to expected IDs
       let mappedId = product.slug;
+      
+      // Map auto-appended items
       if (isAutoAppended) {
         if (product.slug === 'input-expander') {
           mappedId = 'expander';
         } else if (product.slug === 'additional-power-supply') {
           mappedId = 'psu';
         }
+      } else {
+        // Map regular add-ons from WooCommerce slugs to static addon IDs
+        const slugToIdMap: Record<string, string> = {
+          'outdoor-motion-sensor-pet-friendly': 'outpir',
+          'touchscreen-keypad': 'tskp',
+          'wireless-smoke-detector': 'smoke',
+          'panic-button-portable': 'panic',
+          'glass-break-detector': 'glass',
+          'door-window-sensor': 'door',
+          'additional-keypad': 'keypad2'
+        };
+        
+        mappedId = slugToIdMap[product.slug] || product.slug;
       }
 
       return {
