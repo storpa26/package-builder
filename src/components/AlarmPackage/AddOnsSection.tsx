@@ -309,12 +309,32 @@ function extractBullets(html: string): string[] {
             });
           } else {
             console.warn(`⚠️ No WooCommerce product ID found for addon: ${selection.id}`);
-            // Try to find by name matching as fallback
-            const fallbackAddon = addonProducts.find(a => a.name.toLowerCase().includes(addon.name.toLowerCase().split(' ')[0]));
-            if (fallbackAddon) {
-              console.log(`🛒 Using fallback addon:`, fallbackAddon.name);
-              // For now, we'll skip items without proper WooCommerce IDs
-              // In production, you'd want proper product mapping
+            // Try hardcoded mapping for regular add-ons
+            const hardcodedAddonMap: Record<string, number> = {
+              'outpir': 2378, // Outdoor motion sensor
+              'tskp': 2381,   // Touchscreen keypad
+              'smoke': 2393,  // Smoke detector
+              'panic': 2385,  // Panic button
+              'glass': 2384,  // Glass break detector
+              'door': 2383,   // Door/window sensor
+              'keypad2': 2382 // Additional keypad
+            };
+            
+            const hardcodedId = hardcodedAddonMap[selection.id];
+            if (hardcodedId) {
+              console.log(`🛒 Using hardcoded ID for ${selection.id}: ${hardcodedId}`);
+              cartItems.push({
+                id: hardcodedId,
+                quantity: selection.quantity,
+                meta: {
+                  addon_type: addon.type,
+                  context: context,
+                  product_name: addon.name,
+                  user_selected: true
+                }
+              });
+            } else {
+              console.warn(`⚠️ No hardcoded mapping found for addon: ${selection.id}`);
             }
           }
         } else {
@@ -439,12 +459,12 @@ function extractBullets(html: string): string[] {
       });
       
       // Redirect to cart page after a short delay
-      setTimeout(() => {
-        const cartUrl = window.location.origin.includes('localhost') 
-          ? 'https://cheapalarms.com.au/cart/' 
-          : '/cart/';
-        window.location.href = cartUrl;
-      }, 1500);
+      // setTimeout(() => {
+      //   const cartUrl = window.location.origin.includes('localhost') 
+      //     ? 'https://cheapalarms.com.au/cart/' 
+      //     : '/cart/';
+      //   window.location.href = cartUrl;
+      // }, 1500);
        
      } catch (err) {
        console.error('❌ Cart operation failed:', err);
