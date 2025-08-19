@@ -6,7 +6,7 @@ import { ContextSwitcher } from '@/components/AlarmPackage/ContextSwitcher';
 import { AddOnsSection } from '@/components/AlarmPackage/AddOnsSection';
 import { TechSpecs } from '@/components/AlarmPackage/TechSpecs';
 import { InstallationProcess } from '@/components/AlarmPackage/InstallationProcess';
-import { StickyCartBar } from '@/components/AlarmPackage/StickyCartBar';
+// Remove this line: import { StickyCartBar } from '@/components/AlarmPackage/StickyCartBar';
 import { config, type Context } from '@/lib/config';
 import { wooApi } from '@/lib/api';
 import { productIds } from '@/data/ids';
@@ -194,17 +194,9 @@ export default function WordPressAlarmPackage() {
 
       <InstallationProcess />
 
-      {/* Replace StickyEstimator with StickyCartBar */}
-      <StickyCartBar
-        estimatedTotal={estimatedTotal}
-        selectedAddons={selectedAddons}
-        context={context}
-        basePrice={basePrice}
-        onAddToCart={handleAddToCart}
-      />
+      {/* StickyCartBar removed */}
 
-      {/* Add bottom padding for sticky cart bar */}
-      <div className="h-20" />
+      {/* Remove bottom padding since sticky cart bar is gone */}
     </div>
   );
 }

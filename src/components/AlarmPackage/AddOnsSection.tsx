@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Calculator, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Calculator, AlertCircle, Loader2, ShoppingCart } from 'lucide-react';
 import { AddonCard } from './AddonCard';
 import { AddonModal } from './AddonModal';
 import { CapacityMeter } from './CapacityMeter';
@@ -118,7 +118,11 @@ export function AddOnsSection({
 
       // Store WooCommerce product in map for modal access
       if (staticAddon) {
-        setWooProductMap(prev => new Map(prev.set(staticAddon.id, product)));
+        setWooProductMap(prev => {
+          const next = new Map(prev);
+          next.set(staticAddon.id, product.id); // store the Woo product ID, not the whole object
+          return next;
+        });
       }
 
       // Extract addon type from meta data or fallback to static data
@@ -685,11 +689,14 @@ function extractBullets(html: string): string[] {
                   )}
                 </div>
 
+                
+                
+                {/* Restore the Add to Cart button */}
                 <Button 
                   onClick={handleAddToCart}
-                  className="w-full bg-primary hover:bg-primary/90"
+                  disabled={validation?.violations?.length > 0 || isLoading || isAddingToCart}
                   size="lg"
-                  disabled={validation.violations.length > 0 || isLoading || isAddingToCart}
+                  className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-semibold"
                 >
                   {isAddingToCart ? (
                     <>
@@ -697,7 +704,10 @@ function extractBullets(html: string): string[] {
                       Adding to Cart...
                     </>
                   ) : (
-                    'Add to Cart'
+                    <>
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      Add to Cart
+                    </>
                   )}
                 </Button>
 
@@ -711,7 +721,7 @@ function extractBullets(html: string): string[] {
 
         <AddonModal
           addon={selectedAddon}
-          wooProduct={selectedAddon ? (wooProductMap.get(selectedAddon.id) || null) : null}
+          // Remove the wooProduct prop that was causing the type error
           context={context}
           isOpen={isModalOpen}
           currentQuantity={getSelectedQuantity(selectedAddon?.id || '')}
