@@ -37,6 +37,7 @@ export function AddOnsSection({
   const [baseProductPrice, setBaseProductPrice] = useState<Record<Context, number> | null>(null);
   const [baseProduct, setBaseProduct] = useState<WooProduct | null>(null);
   const [wooProductMap, setWooProductMap] = useState<Map<string, number>>(new Map());
+  const [wooProducts, setWooProducts] = useState<WooProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +71,9 @@ export function AddOnsSection({
         const autoRequiredWooProducts = await wooApi.getAutoRequiredProducts();
         const mappedAutoRequired = mapWooProductsToAddons(autoRequiredWooProducts, true);
         
+        // Store all WooProducts for variation lookup
+        setWooProducts([...wooProducts, ...autoRequiredWooProducts]);
+        
         setAddonProducts([...mappedAddons, ...mappedAutoRequired]);
         setAutoRequiredProducts(mappedAutoRequired);
         
@@ -95,57 +99,52 @@ export function AddOnsSection({
       // Check if meta_data exists, if not use an empty array
       const metaData = product.meta_data || [];
       
-      // Try to find matching static addon for fallback data
-      const staticAddon = staticAddons.find(addon => {
-        // First try exact slug match
-        if (addon.id === product.slug) return true;
-        
-        // Then try name-based matching
-        const productNameLower = product.name.toLowerCase();
-        const addonNameLower = addon.name.toLowerCase();
-        
-        // Check for key terms
-        if (productNameLower.includes('touchscreen') && addonNameLower.includes('touchscreen')) return true;
-        if (productNameLower.includes('outdoor') && addonNameLower.includes('outdoor')) return true;
-        if (productNameLower.includes('glass') && addonNameLower.includes('glass')) return true;
-        if (productNameLower.includes('door') && addonNameLower.includes('door')) return true;
-        if (productNameLower.includes('panic') && addonNameLower.includes('panic')) return true;
-        if (productNameLower.includes('smoke') && addonNameLower.includes('smoke')) return true;
-        if (productNameLower.includes('keypad') && addonNameLower.includes('keypad') && !productNameLower.includes('touchscreen')) return true;
-        
-        return false;
+      // Create a mapping from WooCommerce slugs to expected addon IDs for rules engine compatibility
+      const slugToIdMap: Record<string, string> = {
+        'outdoor-motion-sensor-pet-friendly': 'outpir',
+        'touchscreen-keypad': 'tskp', 
+        'wireless-smoke-detector': 'smoke',
+        'panic-button-portable': 'panic',
+        'glass-break-detector': 'glass',
+        'door-window-sensor': 'door',
+        'additional-keypad': 'keypad2',
+        'input-expander': 'expander',
+        'additional-power-supply': 'psu'
+      };
+      
+      const addonId = slugToIdMap[product.slug] || product.slug;
+      
+      // Store WooCommerce product in map using mapped addon ID as key
+      setWooProductMap(prev => {
+        const next = new Map(prev);
+        next.set(addonId, product.id); // Use mapped addon ID as key, store WooCommerce product ID
+        return next;
       });
 
-      // Store WooCommerce product in map for modal access
-      if (staticAddon) {
-        setWooProductMap(prev => {
-          const next = new Map(prev);
-          next.set(staticAddon.id, product.id); // store the Woo product ID, not the whole object
-          return next;
-        });
-      }
-
-      // Extract addon type from meta data or fallback to static data
+      // Find matching static addon for fallback data
+      const staticAddon = staticAddons.find(addon => addon.id === addonId);
+      
+      // Extract addon type from meta data with fallback to static data
       const typeMetaData = metaData.find(meta => meta.key === '_addon_type');
       const type = typeMetaData?.value || staticAddon?.type || 'accessory';
       
-      // Extract power consumption from meta data or fallback to static data
+      // Extract power consumption from meta data with fallback to static data
       const powerMetaData = metaData.find(meta => meta.key === '_power_milliamps');
       const powerMilliAmps = powerMetaData ? Number(powerMetaData.value) : (staticAddon?.powerMilliAmps || 0);
       
-      // Extract whether it consumes input from meta data or fallback to static data
+      // Extract whether it consumes input from meta data with fallback to static data
       const consumesInputMeta = metaData.find(meta => meta.key === '_consumes_input');
       const consumesInput = consumesInputMeta ? consumesInputMeta.value === 'yes' : (staticAddon?.consumesInput || false);
       
-      // Extract touchscreen property or fallback to static data
+      // Extract touchscreen property from meta data with fallback to static data
       const isTouchscreenMeta = metaData.find(meta => meta.key === '_is_touchscreen');
       const isTouchscreen = isTouchscreenMeta ? isTouchscreenMeta.value === 'yes' : (staticAddon?.isTouchscreen || false);
       
-      // Extract min/max quantities or fallback to static data
+      // Extract min/max quantities from meta data with fallback to static addon data
       const qtyMinMeta = metaData.find(meta => meta.key === '_qty_min');
-      const qtyMin = qtyMinMeta ? Number(qtyMinMeta.value) : (staticAddon?.qtyMin || 0);
-      
       const qtyMaxMeta = metaData.find(meta => meta.key === '_qty_max');
+      
+      const qtyMin = qtyMinMeta ? Number(qtyMinMeta.value) : (staticAddon?.qtyMin || 0);
       const qtyMax = qtyMaxMeta ? Number(qtyMaxMeta.value) : (staticAddon?.qtyMax || 10);
       
       // Extract bullet points from description
@@ -216,33 +215,8 @@ function extractBullets(html: string): string[] {
       if (officePriceMeta) unitPrice.office = Number(officePriceMeta.value);
       if (warehousePriceMeta) unitPrice.warehouse = Number(warehousePriceMeta.value);
       
-      // Map WooCommerce slugs to expected IDs
-      let mappedId = product.slug;
-      
-      // Map auto-appended items
-      if (isAutoAppended) {
-        if (product.slug === 'input-expander') {
-          mappedId = 'expander';
-        } else if (product.slug === 'additional-power-supply') {
-          mappedId = 'psu';
-        }
-      } else {
-        // Map regular add-ons from WooCommerce slugs to static addon IDs
-        const slugToIdMap: Record<string, string> = {
-          'outdoor-motion-sensor-pet-friendly': 'outpir',
-          'touchscreen-keypad': 'tskp',
-          'wireless-smoke-detector': 'smoke',
-          'panic-button-portable': 'panic',
-          'glass-break-detector': 'glass',
-          'door-window-sensor': 'door',
-          'additional-keypad': 'keypad2'
-        };
-        
-        mappedId = slugToIdMap[product.slug] || product.slug;
-      }
-
       return {
-        id: mappedId,
+        id: addonId, // Use mapped ID for rules engine compatibility
         name: product.name,
         type: type as 'sensor' | 'keypad' | 'controller' | 'psu' | 'expander' | 'accessory',
         consumesInput,
@@ -306,6 +280,43 @@ function extractBullets(html: string): string[] {
     }).filter(Boolean);
   };
 
+  // Helper function to get variation data for variable products
+  const getVariationForContext = (product: WooProduct, context: Context) => {
+    // Check if this product has variations
+    if (!product.variations || product.variations.length === 0) {
+      return null; // Simple product, no variation needed
+    }
+
+    // Find the variation that matches the context
+    const targetValue = context === 'residential' ? '"Residential"' : '"Retail"';
+    const matchingVariation = product.variations.find(variation => 
+      variation.attributes.some(attr => 
+        attr.name === 'Property Type' && attr.value === targetValue
+      )
+    );
+
+    if (matchingVariation) {
+      console.log(`🛒 Found variation ${matchingVariation.id} for ${product.name}: ${context}`);
+      return {
+        variation_id: matchingVariation.id,
+        variation: {
+          'Property Type': targetValue
+        }
+      };
+    }
+
+    // Fallback: use first variation if no exact match
+    const fallbackVariation = product.variations[0];
+    console.log(`🛒 Using fallback variation ${fallbackVariation.id} for ${product.name}`);
+    return {
+      variation_id: fallbackVariation.id,
+      variation: fallbackVariation.attributes.reduce((acc, attr) => {
+        acc[attr.name] = attr.value;
+        return acc;
+      }, {} as Record<string, string>)
+    };
+  };
+
   const handleAddToCart = async () => {
     try {
       setIsAddingToCart(true);
@@ -346,11 +357,16 @@ function extractBullets(html: string): string[] {
         
         if (addon) {
           const wooProductId = wooProductMap.get(selection.id);
-          console.log(`🛒 Adding addon: ${addon.name} (ID: ${selection.id} → WooCommerce ID: ${wooProductId})`);
+          console.log(`🛒 Adding addon: ${addon.name} (Slug: ${selection.id} → WooCommerce ID: ${wooProductId})`);
           
           if (wooProductId) {
-            cartItems.push({
-              id: wooProductId,
+            // Find the original WooProduct for variation detection
+            const wooProduct = wooProducts.find(p => p.id === wooProductId);
+            const variationData = wooProduct ? getVariationForContext(wooProduct, context) : null;
+            
+            const cartItem: any = {
+              // Use variation ID if available, otherwise use parent product ID
+              id: variationData?.variation_id || wooProductId,
               quantity: selection.quantity,
               meta: {
                 addon_type: addon.type,
@@ -358,36 +374,16 @@ function extractBullets(html: string): string[] {
                 product_name: addon.name,
                 user_selected: true
               }
-            });
-          } else {
-            console.warn(`⚠️ No WooCommerce product ID found for addon: ${selection.id}`);
-            // Try hardcoded mapping for regular add-ons
-            const hardcodedAddonMap: Record<string, number> = {
-              'outpir': 2378, // Outdoor motion sensor
-              'tskp': 2381,   // Touchscreen keypad
-              'smoke': 2393,  // Smoke detector
-              'panic': 2385,  // Panic button
-              'glass': 2384,  // Glass break detector
-              'door': 2383,   // Door/window sensor
-              'keypad2': 2382 // Additional keypad
             };
             
-            const hardcodedId = hardcodedAddonMap[selection.id];
-            if (hardcodedId) {
-              console.log(`🛒 Using hardcoded ID for ${selection.id}: ${hardcodedId}`);
-              cartItems.push({
-                id: hardcodedId,
-                quantity: selection.quantity,
-                meta: {
-                  addon_type: addon.type,
-                  context: context,
-                  product_name: addon.name,
-                  user_selected: true
-                }
-              });
-            } else {
-              console.warn(`⚠️ No hardcoded mapping found for addon: ${selection.id}`);
+            // Add variation attributes if using parent product ID
+            if (variationData && !variationData.variation_id) {
+              cartItem.variation = variationData.variation;
             }
+            
+            cartItems.push(cartItem);
+          } else {
+            console.warn(`⚠️ No WooCommerce product ID found for slug: ${selection.id}`);
           }
         } else {
           console.warn(`⚠️ Addon not found in products list: ${selection.id}`);

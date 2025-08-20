@@ -86,6 +86,14 @@ export interface WooProduct {
     name: string;
     slug: string;
   }>;
+  // Add this variations property
+  variations?: Array<{
+    id: number;
+    attributes: Array<{
+      name: string;
+      value: string;
+    }>;
+  }>;
   meta_data: Array<{
     key: string;
     value: any;

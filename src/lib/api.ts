@@ -142,19 +142,33 @@ class WooCommerceAPI {
   async addItemsToCart(items: Array<{
     id: number;
     quantity: number;
+    variation_id?: number;
+    variation?: Record<string, string>;
     meta?: Record<string, any>;
   }>): Promise<WooCart> {
     const endpoint = `${config.wordpress.storeApiBase}/cart/add-item`;
     let cart: WooCart | null = null;
 
     for (const item of items) {
+      const payload: any = {
+        id: item.id,
+        quantity: item.quantity,
+        meta: item.meta || {},
+      };
+
+      // For variable products, include variation_id if available
+      if (item.variation_id) {
+        payload.variation_id = item.variation_id;
+      }
+      
+      // Include variation attributes if available
+      if (item.variation) {
+        payload.variation = item.variation;
+      }
+
       cart = await this.makeRequest<WooCart>(endpoint, {
         method: 'POST',
-        body: JSON.stringify({
-          id: item.id,
-          quantity: item.quantity,
-          meta: item.meta || {},
-        }),
+        body: JSON.stringify(payload),
       });
     }
 
