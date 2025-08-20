@@ -10,43 +10,39 @@ type WooTag = {
 
 class WooCommerceAPI {
   private nonce: string | null = null;
-  private cartToken: string | null = null;
 
-  private async makeRequest<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+  // Call this once on app start (or before first write)
+  async bootstrap(): Promise<void> {
+    try { await this.getCart(); } catch { /* ignore */ }
+  }
 
-    // Merge existing headers
+  // Always include credentials (cookies), send latest Nonce, rotate from response
+  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
     if (options.headers) {
-      Object.entries(options.headers as Record<string, string>).forEach(([key, value]) => {
-        headers[key] = value;
-      });
+      for (const [k, v] of Object.entries(options.headers as Record<string, string>)) headers[k] = v;
     }
-
-    // Include nonce & cart token
     if (this.nonce) headers['Nonce'] = this.nonce;
-    if (this.cartToken) headers['Cart-Token'] = this.cartToken;
 
-    const response = await fetch(endpoint, {
-      ...options,
-      headers,
-    });
+    const res = await fetch(endpoint, { ...options, headers, credentials: 'include' });
 
-    // Update nonce/cart token from response
-    const newNonce = response.headers.get('Nonce');
-    const newCartToken = response.headers.get('Cart-Token');
+    // Rotate nonce (Woo sends a fresh one every response)
+    const newNonce =
+      res.headers.get('Nonce') ||
+      res.headers.get('nonce') ||
+      res.headers.get('X-WC-Store-API-Nonce') ||
+      res.headers.get('x-wc-store-api-nonce');
     if (newNonce) this.nonce = newNonce;
-    if (newCartToken) this.cartToken = newCartToken;
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    if (!res.ok) {
+      let body: any = null;
+      try { body = await res.json(); } catch {}
+      const msg = body ? `HTTP ${res.status}: ${JSON.stringify(body)}` : `HTTP ${res.status} ${res.statusText}`;
+      throw new Error(msg);
     }
 
-    return response.json();
+    return res.json();
   }
 
   async getProducts(params: {
@@ -134,11 +130,13 @@ class WooCommerceAPI {
     }
   }
 
+  // Read cart (also bootstraps nonce for guests)
   async getCart(): Promise<WooCart> {
-    const endpoint = `${config.wordpress.storeApiBase}/cart`;
-    return this.makeRequest<WooCart>(endpoint);
+    const url = `${config.wordpress.storeApiBase}/cart`;
+    return this.makeRequest<WooCart>(url);
   }
 
+  // Add multiple items; ensures nonce first; rotates automatically
   async addItemsToCart(items: Array<{
     id: number;
     quantity: number;
@@ -146,48 +144,65 @@ class WooCommerceAPI {
     variation?: Record<string, string>;
     meta?: Record<string, any>;
   }>): Promise<WooCart> {
-    const endpoint = `${config.wordpress.storeApiBase}/cart/add-item`;
+    if (!this.nonce) await this.getCart(); // bootstrap nonce for guests
+
     let cart: WooCart | null = null;
+    const url = `${config.wordpress.storeApiBase}/cart/add-item`;
 
     for (const item of items) {
+      console.log(`🛒 Adding item: ${item.id} x${item.quantity}`);
+      
+      // if nonce dropped, refresh once
+      if (!this.nonce) await this.getCart();
+
       const payload: any = {
         id: item.id,
         quantity: item.quantity,
-        meta: item.meta || {},
+        meta: item.meta ?? {}
       };
-
-      // For variable products, include variation_id if available
+      
+      // Add variation data if provided
       if (item.variation_id) {
         payload.variation_id = item.variation_id;
       }
       
-      // Include variation attributes if available
       if (item.variation) {
         payload.variation = item.variation;
       }
 
-      cart = await this.makeRequest<WooCart>(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      try {
+        cart = await this.makeRequest<WooCart>(url, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        console.log(`✅ Successfully added item: ${item.id}`);
+      } catch (error) {
+        console.error(`❌ Failed to add item ${item.id}:`, error);
+        throw error;
+      }
     }
-
     return cart!;
   }
 
   async updateCartItem(key: string, quantity: number): Promise<WooCart> {
-    const endpoint = `${config.wordpress.storeApiBase}/cart/items/${key}`;
-    return this.makeRequest<WooCart>(endpoint, {
+    if (!this.nonce) await this.getCart();
+    const url = `${config.wordpress.storeApiBase}/cart/items/${key}`;
+    return this.makeRequest<WooCart>(url, {
       method: 'POST',
       body: JSON.stringify({ quantity }),
     });
   }
 
   async removeCartItem(key: string): Promise<WooCart> {
-    const endpoint = `${config.wordpress.storeApiBase}/cart/items/${key}`;
-    return this.makeRequest<WooCart>(endpoint, {
-      method: 'DELETE',
-    });
+    if (!this.nonce) await this.getCart();
+    const url = `${config.wordpress.storeApiBase}/cart/items/${key}`;
+    return this.makeRequest<WooCart>(url, { method: 'DELETE' });
+  }
+
+  async clearCart(): Promise<WooCart> {
+    if (!this.nonce) await this.getCart();
+    const url = `${config.wordpress.storeApiBase}/cart`;
+    return this.makeRequest<WooCart>(url, { method: 'DELETE' });
   }
 
   async validateConfiguration(payload: {
@@ -239,5 +254,5 @@ class WooCommerceAPI {
 
 export const wooApi = new WooCommerceAPI();
 
-// Initialize cart token
-wooApi.getCart().catch(() => { /* ignore initial load errors */ });
+// Initialize nonce and cart
+wooApi.bootstrap().catch(() => { /* ignore initial load errors */ });
