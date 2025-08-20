@@ -53,29 +53,11 @@ export function AddOnsSection({
         if (baseProductData) {
           setBaseProduct(baseProductData);
           const basePrice = parseFloat(baseProductData.prices.price) / (10 ** baseProductData.prices.currency_minor_unit);
-          
-          // Use price_range if available: min_amount = Residential, max_amount = Retail
-          let residentialBasePrice = basePrice;
-          let retailBasePrice = basePrice * 1.15;
-          
-          if (baseProductData.prices.price_range) {
-            const minAmount = baseProductData.prices.price_range.min_amount;
-            const maxAmount = baseProductData.prices.price_range.max_amount;
-            
-            if (minAmount && !isNaN(parseFloat(minAmount))) {
-              residentialBasePrice = parseFloat(minAmount) / (10 ** baseProductData.prices.currency_minor_unit);
-            }
-            
-            if (maxAmount && !isNaN(parseFloat(maxAmount))) {
-              retailBasePrice = parseFloat(maxAmount) / (10 ** baseProductData.prices.currency_minor_unit);
-            }
-          }
-          
           const basePricing = {
-            residential: residentialBasePrice,
-            retail: retailBasePrice,
-            office: retailBasePrice,
-            warehouse: retailBasePrice * 1.13
+            residential: basePrice,
+            retail: basePrice * 1.15,
+            office: basePrice * 1.15,
+            warehouse: basePrice * 1.3
           };
           setBaseProductPrice(basePricing);
         }
@@ -218,8 +200,8 @@ function extractBullets(html: string): string[] {
       const unitPrice = {
         residential: residentialPrice,
         retail: retailPrice,
-        office: retailPrice,  // Use retail price for office
-        warehouse: retailPrice * 1.13  // 13% markup over retail for warehouse
+        office: priceValue * 1.15,  // Use fallback pricing for office
+        warehouse: priceValue * 1.3  // Use fallback pricing for warehouse
       };
       
       // Check for context-specific pricing in meta data
