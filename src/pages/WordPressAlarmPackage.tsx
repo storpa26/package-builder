@@ -4,6 +4,7 @@ import { Hero } from '@/components/AlarmPackage/WordPressHero';
 import { PackageInclusions } from '@/components/AlarmPackage/PackageInclusions';
 import { ContextSwitcher } from '@/components/AlarmPackage/ContextSwitcher';
 import { AddOnsSection } from '@/components/AlarmPackage/AddOnsSection';
+import { ProductTypeToggle, ProductType } from '@/components/AlarmPackage/ProductTypeToggle';
 import { TechSpecs } from '@/components/AlarmPackage/TechSpecs';
 import { InstallationProcess } from '@/components/AlarmPackage/InstallationProcess';
 // Remove this line: import { StickyCartBar } from '@/components/AlarmPackage/StickyCartBar';
@@ -29,8 +30,9 @@ export default function WordPressAlarmPackage() {
   
   // State management
   const [context, setContext] = useState<Context>('residential');
+  const [productType, setProductType] = useState<ProductType>('wireless');
   const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>([]);
-  const [wizardAnswers, setWizardAnswers] = useState<Record<string, any>>({});
+  const [wizardAnswers, setWizardAnswers] = useState<Record<string, unknown>>({});
   const [wooProducts, setWooProducts] = useState<WooProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -163,6 +165,19 @@ export default function WordPressAlarmPackage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Product Type Toggle - At the very top */}
+      <div className="py-8 px-4 bg-background border-b">
+        <div className="container mx-auto max-w-6xl">
+          <ProductTypeToggle
+            value={productType}
+            onChange={(newType) => {
+              setProductType(newType);
+              setSelectedAddons([]); // Reset selections when switching product types
+            }}
+          />
+        </div>
+      </div>
+
       <Hero
         context={context}
         basePrice={basePrice}
@@ -184,6 +199,7 @@ export default function WordPressAlarmPackage() {
 
       <AddOnsSection
         context={context}
+        productType={productType}
         selectedAddons={selectedAddons}
         onUpdateAddons={setSelectedAddons}
         estimatedTotal={estimatedTotal}
@@ -204,7 +220,7 @@ export default function WordPressAlarmPackage() {
 // WordPress integration initializer
 export function initAlarmConfigurator(
   rootElement: HTMLElement, 
-  overrides: Partial<{ context: Context; answers: Record<string, any> }> = {}
+  overrides: Partial<{ context: Context; answers: Record<string, unknown> }> = {}
 ) {
   // This would be implemented with React.render in a real WordPress integration
   // TODO: Implement React.render when integrated with WordPress

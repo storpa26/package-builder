@@ -7,6 +7,7 @@ import { AddOnsSection } from '@/components/AlarmPackage/AddOnsSection';
 import { TechSpecs } from '@/components/AlarmPackage/TechSpecs';
 import { InstallationProcess } from '@/components/AlarmPackage/InstallationProcess';
 import { StickyEstimator } from '@/components/AlarmPackage/StickyEstimator';
+import { ProductTypeToggle, ProductType } from '@/components/AlarmPackage/ProductTypeToggle';
 import { Context, assumptions, defaultChips } from '@/data/assumptions';
 import { addons } from '@/data/addons';
 import { SelectedAddon, RulesEngine } from '@/lib/rules';
@@ -19,8 +20,9 @@ export default function AlarmPackage() {
   
   // State management
   const [context, setContext] = useState<Context>('residential');
+  const [productType, setProductType] = useState<ProductType>('wireless');
   const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>([]);
-  const [wizardAnswers, setWizardAnswers] = useState<Record<string, any>>({});
+  const [wizardAnswers, setWizardAnswers] = useState<Record<string, unknown>>({});
 
   // Initialize from URL parameters (wizard integration)
   useEffect(() => {
@@ -129,8 +131,21 @@ export default function AlarmPackage() {
         </div>
       </div>
 
+      <div className="py-8 px-4">
+          <div className="container mx-auto max-w-6xl">
+            <ProductTypeToggle
+              value={productType}
+              onChange={(newType) => {
+                setProductType(newType);
+                setSelectedAddons([]); // Reset selections when switching product types
+              }}
+            />
+          </div>
+        </div>
+
       <AddOnsSection
         context={context}
+        productType={productType}
         selectedAddons={selectedAddons}
         onUpdateAddons={setSelectedAddons}
         estimatedTotal={estimatedTotal}

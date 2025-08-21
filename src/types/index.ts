@@ -22,7 +22,7 @@ export interface Selection {
     qty: number;
   }>;
   context: 'residential' | 'retail' | 'office' | 'warehouse';
-  answers?: Record<string, any>;
+  answers?: Record<string, unknown>;
 }
 
 export interface ValidationResult {
@@ -96,7 +96,7 @@ export interface WooProduct {
   }>;
   meta_data: Array<{
     key: string;
-    value: any;
+    value: unknown;
   }>;
 }
 
@@ -113,7 +113,7 @@ export interface WooCartItem {
 
   };
   meta: {
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

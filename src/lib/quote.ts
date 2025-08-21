@@ -4,7 +4,7 @@ import { SelectedAddon } from '@/lib/rules';
 export interface QuotePayload {
   package: string;
   context: Context;
-  answers?: Record<string, any>;
+  answers?: Record<string, unknown>;
   base: number;
   addons: Array<{ id: string; name: string; qty: number; price: number }>;
   autoItems: Array<{ id: string; name: string; qty: number; price: number }>;

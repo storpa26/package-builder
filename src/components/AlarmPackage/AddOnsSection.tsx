@@ -13,9 +13,11 @@ import { SelectedAddon, RulesEngine } from '@/lib/rules';
 import { formatCurrency } from '@/lib/quote';
 import { wooApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import type { ProductType } from './ProductTypeToggle';
 
 interface AddOnsSectionProps {
   context: Context;
+  productType: ProductType;
   selectedAddons: SelectedAddon[];
   onUpdateAddons: (addons: SelectedAddon[]) => void;
   estimatedTotal: number;
@@ -23,7 +25,8 @@ interface AddOnsSectionProps {
 }
 
 export function AddOnsSection({ 
-  context, 
+  context,
+  productType, 
   selectedAddons, 
   onUpdateAddons, 
   estimatedTotal,
@@ -50,7 +53,7 @@ export function AddOnsSection({
         setError(null);
         
         // Fetch base product for pricing
-        const baseProductData = await wooApi.getBaseAlarmProduct();
+        const baseProductData = await wooApi.getBaseAlarmProduct(productType);
         if (baseProductData) {
           setBaseProduct(baseProductData);
           
@@ -68,11 +71,11 @@ export function AddOnsSection({
         }
         
         // Fetch regular add-on products
-        const wooProducts = await wooApi.getAlarmAddonProducts();
+        const wooProducts = await wooApi.getAlarmAddonProducts(productType);
         const mappedAddons = mapWooProductsToAddons(wooProducts);
         
         // Fetch auto-required products
-        const autoRequiredWooProducts = await wooApi.getAutoRequiredProducts();
+        const autoRequiredWooProducts = await wooApi.getAutoRequiredProducts(productType);
         const mappedAutoRequired = mapWooProductsToAddons(autoRequiredWooProducts, true);
         
         // Store all WooProducts for variation lookup
@@ -95,13 +98,13 @@ export function AddOnsSection({
     };
 
     fetchAddonProducts();
-  }, []);
+  }, [productType]);
 
   // Map WooCommerce products to local Addon type
   const mapWooProductsToAddons = (products: WooProduct[], isAutoAppended: boolean = false): Addon[] => {
     return products.map(product => {
       // Check if meta_data exists, if not use an empty array
-      const metaData = product.meta_data || [];
+      const metaData: Array<{ key: string; value: unknown }> = product.meta_data || [];
       
       // Create a mapping from WooCommerce slugs to expected addon IDs for rules engine compatibility
       const slugToIdMap: Record<string, string> = {
@@ -368,7 +371,13 @@ function extractBullets(html: string): string[] {
             const wooProduct = wooProducts.find(p => p.id === wooProductId);
             const variationData = wooProduct ? getVariationForContext(wooProduct, context) : null;
             
-            const cartItem: any = {
+            const cartItem: {
+              id: number;
+              quantity: number;
+              variation_id?: number;
+              variation?: Record<string, string>;
+              meta: Record<string, unknown>;
+            } = {
               // Use variation ID if available, otherwise use parent product ID
               id: variationData?.variation_id || wooProductId,
               quantity: selection.quantity,

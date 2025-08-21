@@ -35,8 +35,19 @@ export const config = {
   
   // Product configuration
   products: {
-    addonCategory: 'alarm-addon', // WooCommerce category for add-on products
-    baseProductSlug: 'hybrid-wireless-alarm-system' // Base package product
+    wireless: {
+      // Keep original working wireless config
+      addonCategory: 'alarm-addon', // Original working category
+      baseProductSlug: 'hybrid-wireless-alarm-system' // Original working slug
+    },
+    hardwired: {
+      baseCategory: 'wired-base-package',
+      baseTag: 'wired-base-package', 
+      addonCategory: 'wired-alarm-addon',
+      addonTag: 'wired-alarm-addon',
+      autoRequiredCategory: 'wired-alarm-auto-required',
+      autoRequiredTag: 'wired-alarm-auto-required'
+    }
   }
 } as const;
 

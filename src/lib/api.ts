@@ -36,8 +36,8 @@ class WooCommerceAPI {
     if (newNonce) this.nonce = newNonce;
 
     if (!res.ok) {
-      let body: any = null;
-      try { body = await res.json(); } catch {}
+      let body: unknown = null;
+      try { body = await res.json(); } catch { /* ignore parse errors */ }
       const msg = body ? `HTTP ${res.status}: ${JSON.stringify(body)}` : `HTTP ${res.status} ${res.statusText}`;
       throw new Error(msg);
     }
@@ -97,36 +97,67 @@ class WooCommerceAPI {
   }
 
   /** Fetch products with tag/category "alarm-addon" */
-  async getAlarmAddonProducts(perPage = 100): Promise<WooProduct[]> {
+  async getAlarmAddonProducts(productType: 'wireless' | 'hardwired' = 'wireless', perPage = 100): Promise<WooProduct[]> {
     try {
-      const tagId = await this.resolveTagIdBySlug('alarm-addon');
-      if (!tagId) {
-        return [];
+      const productConfig = config.products[productType];
+      
+      if (productType === 'wireless') {
+        // Use original working wireless API call
+        return await this.getProducts({ category: productConfig.addonCategory, per_page: perPage });
+      } else {
+        // Use new hardwired API call
+        return await this.getProducts({ 
+          category: productConfig.addonCategory, 
+          tag: productConfig.addonTag,
+          per_page: perPage 
+        });
       }
-      return this.getProducts({ tag: tagId.toString(), per_page: perPage });
     } catch (error) {
+      console.error(`Failed to fetch ${productType} addon products:`, error);
       throw error;
     }
   }
 
-  async getBaseAlarmProduct(): Promise<WooProduct | null> {
+  async getBaseAlarmProduct(productType: 'wireless' | 'hardwired' = 'wireless'): Promise<WooProduct | null> {
     try {
-      const products = await this.getProducts({ slug: 'hybrid-wireless-alarm-system', per_page: 1 });
-      return products.length > 0 ? products[0] : null;
+      const productConfig = config.products[productType];
+      
+      if (productType === 'wireless') {
+        // Use original working wireless API call
+        const products = await this.getProducts({ slug: productConfig.baseProductSlug, per_page: 1 });
+        return products.length > 0 ? products[0] : null;
+      } else {
+        // Use new hardwired API call
+        const products = await this.getProducts({ 
+          category: productConfig.baseCategory,
+          tag: productConfig.baseTag,
+          per_page: 1 
+        });
+        return products.length > 0 ? products[0] : null;
+      }
     } catch (error) {
-      throw error;
+      console.error(`Failed to fetch ${productType} base product:`, error);
+      return null;
     }
   }
 
-  async getAutoRequiredProducts(perPage = 100): Promise<WooProduct[]> {
+  async getAutoRequiredProducts(productType: 'wireless' | 'hardwired' = 'wireless', perPage = 100): Promise<WooProduct[]> {
     try {
-      const tagId = await this.resolveTagIdBySlug('alarm-auto-required');
-      if (!tagId) {
-        return [];
+      if (productType === 'wireless') {
+        // Use original working wireless API call
+        return await this.getProducts({ tag: 'auto-required', per_page: perPage });
+      } else {
+        // Use new hardwired API call
+        const productConfig = config.products[productType];
+        return await this.getProducts({ 
+          category: productConfig.autoRequiredCategory,
+          tag: productConfig.autoRequiredTag,
+          per_page: perPage 
+        });
       }
-      return this.getProducts({ tag: tagId.toString(), per_page: perPage });
     } catch (error) {
-      throw error;
+      console.error(`Failed to fetch ${productType} auto-required products:`, error);
+      return [];
     }
   }
 
@@ -142,7 +173,7 @@ class WooCommerceAPI {
     quantity: number;
     variation_id?: number;
     variation?: Record<string, string>;
-    meta?: Record<string, any>;
+    meta?: Record<string, unknown>;
   }>): Promise<WooCart> {
     if (!this.nonce) await this.getCart(); // bootstrap nonce for guests
 
@@ -155,11 +186,17 @@ class WooCommerceAPI {
       // if nonce dropped, refresh once
       if (!this.nonce) await this.getCart();
 
-      const payload: any = {
-        id: item.id,
-        quantity: item.quantity,
-        meta: item.meta ?? {}
-      };
+      const payload: {
+          id: number;
+          quantity: number;
+          meta: Record<string, unknown>;
+          variation_id?: number;
+          variation?: Record<string, string>;
+        } = {
+          id: item.id,
+          quantity: item.quantity,
+          meta: item.meta ?? {}
+        };
       
       // Add variation data if provided
       if (item.variation_id) {
@@ -209,7 +246,7 @@ class WooCommerceAPI {
     baseProductId: number;
     addons: Array<{ id: string; qty: number }>;
     context: string;
-    answers?: Record<string, any>;
+    answers?: Record<string, unknown>;
   }): Promise<ValidationResult> {
     const fallbackResult: ValidationResult = {
       normalized: [
