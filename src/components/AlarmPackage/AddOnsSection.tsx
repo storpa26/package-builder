@@ -53,12 +53,16 @@ export function AddOnsSection({
         const baseProductData = await wooApi.getBaseAlarmProduct();
         if (baseProductData) {
           setBaseProduct(baseProductData);
+          
+          // Use the base product price directly (same for all contexts)
           const basePrice = parseFloat(baseProductData.prices.price) / (10 ** baseProductData.prices.currency_minor_unit);
+          
+          // Base product price is the same for residential and retail
           const basePricing = {
             residential: basePrice,
-            retail: basePrice * 1.15,
-            office: basePrice * 1.15,
-            warehouse: basePrice * 1.3
+            retail: basePrice,  // Same as residential
+            office: basePrice,  // Same as residential
+            warehouse: basePrice // Same as residential
           };
           setBaseProductPrice(basePricing);
         }
