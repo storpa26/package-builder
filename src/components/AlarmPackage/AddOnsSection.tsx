@@ -15,11 +15,13 @@ import { wooApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import type { ProductType } from './ProductTypeToggle';
 
+// Add callback to pass addon products up to parent
 interface AddOnsSectionProps {
   context: Context;
   productType: ProductType;
   selectedAddons: SelectedAddon[];
   onUpdateAddons: (addons: SelectedAddon[]) => void;
+  onAddonProductsChange: (products: Addon[]) => void;
   estimatedTotal: number;
   onAddToQuote: () => void;
 }
@@ -28,7 +30,8 @@ export function AddOnsSection({
   context,
   productType, 
   selectedAddons, 
-  onUpdateAddons, 
+  onUpdateAddons,
+  onAddonProductsChange, 
   estimatedTotal,
   onAddToQuote 
 }: AddOnsSectionProps) {
@@ -81,8 +84,12 @@ export function AddOnsSection({
         // Store all WooProducts for variation lookup
         setWooProducts([...wooProducts, ...autoRequiredWooProducts]);
         
-        setAddonProducts([...mappedAddons, ...mappedAutoRequired]);
+        const allAddonProducts = [...mappedAddons, ...mappedAutoRequired];
+        setAddonProducts(allAddonProducts);
         setAutoRequiredProducts(mappedAutoRequired);
+        
+        // Call the callback to pass addon products to parent
+        onAddonProductsChange(allAddonProducts);
         
         setIsLoading(false);
       } catch (err) {
@@ -92,8 +99,12 @@ export function AddOnsSection({
         
         // Fallback to static data if API fails
         const autoAppendedAddons = staticAddons.filter(addon => addon.isAutoAppended);
-        setAddonProducts([...staticAddons.filter(addon => !addon.isAutoAppended), ...autoAppendedAddons]);
+        const fallbackAddonProducts = [...staticAddons.filter(addon => !addon.isAutoAppended), ...autoAppendedAddons];
+        setAddonProducts(fallbackAddonProducts);
         setAutoRequiredProducts(autoAppendedAddons);
+        
+        // Call the callback to pass addon products to parent
+        onAddonProductsChange(fallbackAddonProducts);
       }
     };
 
@@ -108,6 +119,7 @@ export function AddOnsSection({
       
       // Create a mapping from WooCommerce slugs to expected addon IDs for rules engine compatibility
       const slugToIdMap: Record<string, string> = {
+        // Wireless product slugs
         'outdoor-motion-sensor-pet-friendly': 'outpir',
         'touchscreen-keypad': 'tskp', 
         'wireless-smoke-detector': 'smoke',
@@ -116,7 +128,16 @@ export function AddOnsSection({
         'door-window-sensor': 'door',
         'additional-keypad': 'keypad2',
         'input-expander': 'expander',
-        'additional-power-supply': 'psu'
+        'additional-power-supply': 'psu',
+        // Hardwired product slugs (based on actual WooCommerce product names)
+        'outdoor-motion-sensor-pet-friendly-wired': 'outpir',
+        'touchscreen-keypad-wired': 'tskp',
+        'additional-keypad-wired': 'keypad2',
+        'door-window-sensor-wired': 'door',
+        'glass-break-detector-wired': 'glass',
+        'input-expander-wired': 'expander',
+        'additional-power-supply-wired': 'psu',
+        'panic-button-portable-wired': 'panic'
       };
       
       const addonId = slugToIdMap[product.slug] || product.slug;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 // Remove this line: import { useSearchParams } from 'react-router-dom';
 import { Hero } from '@/components/AlarmPackage/WordPressHero';
 import { PackageInclusions } from '@/components/AlarmPackage/PackageInclusions';
@@ -16,6 +16,7 @@ import { assumptions, defaultChips } from '@/data/assumptions';
 import type { WooProduct, Selection, ValidationResult } from '@/types';
 import { SelectedAddon, RulesEngine } from '@/lib/rules';
 import { useToast } from '@/hooks/use-toast';
+import type { Addon } from '@/types'; // Add this import
 
 export default function WordPressAlarmPackage() {
   // Replace useSearchParams with URLSearchParams
@@ -81,9 +82,28 @@ export default function WordPressAlarmPackage() {
   }, [toast]);
 
   // Rules engine and calculations
-  const rulesEngine = new RulesEngine(addons);
-  const validation = rulesEngine.validateSelection(selectedAddons);
-  const estimatedTotal = rulesEngine.calculateTotal(selectedAddons, context);
+  // Add this state to WordPressAlarmPackage component
+  const [addonProducts, setAddonProducts] = useState<Addon[]>([]);
+  
+  // Handler for addon products change
+  const handleAddonProductsChange = (products: Addon[]) => {
+    setAddonProducts(products);
+  };
+  
+  // Dynamic rules engine based on product type
+  const rulesEngine = useMemo(() => {
+    return addonProducts.length > 0 
+      ? new RulesEngine(addonProducts)
+      : new RulesEngine(addons);
+  }, [addonProducts]);
+  
+  const validation = useMemo(() => {
+    return rulesEngine.validateSelection(selectedAddons);
+  }, [rulesEngine, selectedAddons]);
+  
+  const estimatedTotal = useMemo(() => {
+    return rulesEngine.calculateTotal(selectedAddons, context);
+  }, [rulesEngine, selectedAddons, context]);
 
   const currentAssumptions = defaultChips[context];
   const basePrice = config.system.basePrice[context];
@@ -203,6 +223,7 @@ export default function WordPressAlarmPackage() {
         productType={productType}
         selectedAddons={selectedAddons}
         onUpdateAddons={setSelectedAddons}
+        onAddonProductsChange={handleAddonProductsChange}
         estimatedTotal={estimatedTotal}
         onAddToQuote={handleAddToCart}
       />
@@ -213,17 +234,16 @@ export default function WordPressAlarmPackage() {
 
       {/* StickyCartBar removed */}
 
-      {/* Remove bottom padding since sticky cart bar is gone */}
     </div>
   );
-}
+    }
 
-// WordPress integration initializer
-export function initAlarmConfigurator(
-  rootElement: HTMLElement, 
-  overrides: Partial<{ context: Context; answers: Record<string, unknown> }> = {}
-) {
-  // This would be implemented with React.render in a real WordPress integration
-  // TODO: Implement React.render when integrated with WordPress
-  // ReactDOM.render(<WordPressAlarmPackage {...overrides} />, rootElement);
-}
+    // WordPress integration initializer
+    export function initAlarmConfigurator(
+      rootElement: HTMLElement, 
+      overrides: Partial<{ context: Context; answers: Record<string, unknown> }> = {}
+    ) {
+      // This would be implemented with React.render in a real WordPress integration
+      // TODO: Implement React.render when integrated with WordPress
+      // ReactDOM.render(<WordPressAlarmPackage {...overrides} />, rootElement);
+    }
