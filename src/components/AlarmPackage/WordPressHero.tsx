@@ -6,15 +6,17 @@ import type { Context } from '@/lib/config';
 import type { WooProduct } from '@/types';
 import { wooApi } from '@/lib/api';
 import { assumptions } from '@/data/assumptions';
+import type { ProductType } from './ProductTypeToggle';
 
 interface HeroProps {
   context: Context;
+  productType: ProductType;
   basePrice: number;
   onGetPackage: () => void;
   onGetQuote: () => void;
 }
 
-export function Hero({ context, basePrice, onGetPackage, onGetQuote }: HeroProps) {
+export function Hero({ context, productType, basePrice, onGetPackage, onGetQuote }: HeroProps) {
   const [baseProduct, setBaseProduct] = useState<WooProduct | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +26,7 @@ export function Hero({ context, basePrice, onGetPackage, onGetQuote }: HeroProps
       try {
         setIsLoading(true);
         setError(null);
-        const product = await wooApi.getBaseAlarmProduct();
+        const product = await wooApi.getBaseAlarmProduct(productType);
         setBaseProduct(product);
         setIsLoading(false);
       } catch (err) {
@@ -34,13 +36,18 @@ export function Hero({ context, basePrice, onGetPackage, onGetQuote }: HeroProps
     };
 
     fetchBaseProduct();
-  }, []);
+  }, [productType]);
 
   // Get product data - use WooCommerce data if available, fallback to static
-  const productName = baseProduct?.name || 'Hybrid Wireless Alarm System';
+  const fallbackName = productType === 'wireless' ? 'Hybrid Wireless Alarm System' : 'Hardwired Alarm System';
+  const fallbackDescription = productType === 'wireless' 
+    ? 'Protect what matters most with our expandable wireless security system. Professional installation, 2-year workmanship warranty, and 24/7 monitoring ready.'
+    : 'Reliable hardwired security system with professional installation. Built for maximum reliability and performance with 2-year workmanship warranty.';
+  
+  const productName = baseProduct?.name || fallbackName;
   const productDescription = baseProduct?.short_description ? 
     baseProduct.short_description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() :
-    'Protect what matters most with our expandable wireless security system. Professional installation, 2-year workmanship warranty, and 24/7 monitoring ready.';
+    fallbackDescription;
   const productPrice = baseProduct ? 
     (parseFloat(baseProduct.prices.price) / (10 ** baseProduct.prices.currency_minor_unit)) : 
     basePrice;

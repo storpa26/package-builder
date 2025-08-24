@@ -180,6 +180,7 @@ export default function WordPressAlarmPackage() {
 
       <Hero
         context={context}
+        productType={productType}
         basePrice={basePrice}
         onGetPackage={handleAddToCart}
         onGetQuote={handleGetQuote}
