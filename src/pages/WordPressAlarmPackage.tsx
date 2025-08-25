@@ -193,10 +193,41 @@ export default function WordPressAlarmPackage() {
     handleAddToCart();
   };
 
-  const handleLeadSubmit = (data: LeadData) => {
+  const handleLeadSubmit = async (data: LeadData) => {
     setLeadData(data);
     console.log('Lead captured:', data);
     // TODO: Send to GHL later
+    
+    // Auto-add base package to cart
+    try {
+      const baseProductData = await wooApi.getBaseAlarmProduct(productType);
+      if (baseProductData) {
+        await wooApi.addItemsToCart([{
+          id: baseProductData.id,
+          quantity: 1,
+          meta: {
+            product_type: productType,
+            context: context,
+            lead_name: data.name,
+            lead_email: data.email,
+            lead_phone: data.phone,
+            timestamp: new Date().toISOString()
+          }
+        }]);
+        console.log('Base package added to cart automatically');
+        toast({
+          title: "Added to Cart",
+          description: `${baseProductData.name} has been added to your cart.`,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to add base package to cart:', error);
+      toast({
+        title: "Note",
+        description: "Lead captured successfully. You can customize your package below.",
+        variant: "default",
+      });
+    }
   };
 
   const handleContextChange = (newContext: Context) => {
@@ -236,13 +267,12 @@ export default function WordPressAlarmPackage() {
         onCeilingTypeChange={setCeilingType}
         onLeadSubmit={handleLeadSubmit}
         showAddons={selectedAddons.length > 0}
+        leadData={leadData}
         onGetPackage={handleAddToCart}
         onGetQuote={handleGetQuote}
       />
 
-      <PackageInclusions context={context} />
-
-      {/* Only show add-ons after lead capture */}
+      {/* Add-ons Section - Full width below Hero, only after lead capture */}
       {leadData && (
         <AddOnsSection
           context={context}
@@ -254,6 +284,8 @@ export default function WordPressAlarmPackage() {
           onAddToQuote={handleAddToCart}
         />
       )}
+
+      <PackageInclusions context={context} />
 
       <TechSpecs />
 
