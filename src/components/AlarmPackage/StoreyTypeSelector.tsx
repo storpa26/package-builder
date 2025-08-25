@@ -14,16 +14,16 @@ export function StoreyTypeSelector({ value, onChange }: StoreyTypeSelectorProps)
     {
       type: 'single' as StoreyType,
       label: 'Single Storey',
-      description: 'One level home or building',
+      description: 'One level with pitched/tiled roof',
       icon: Home,
-      recommended: 'Wireless System'
+      recommended: 'Hardwired System'
     },
     {
       type: 'multi' as StoreyType,
       label: 'Multi Storey',
       description: 'Two or more levels',
       icon: Building2,
-      recommended: 'Hardwired System'
+      recommended: 'Wireless System'
     }
   ];
 

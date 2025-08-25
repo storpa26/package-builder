@@ -13,17 +13,17 @@ export function CeilingTypeSelector({ value, onChange }: CeilingTypeSelectorProp
   const options = [
     {
       type: 'suspended' as CeilingType,
-      label: 'Suspended Ceiling',
+      label: 'Tiled/Drop Ceiling',
       description: 'Drop ceiling with tiles or panels',
       icon: Grid3X3,
-      recommended: 'Wireless System'
+      recommended: 'Hardwired System'
     },
     {
       type: 'concrete' as CeilingType,
-      label: 'Concrete/Solid Ceiling',
+      label: 'Solid Ceiling',
       description: 'Solid concrete or plaster ceiling',
       icon: Hammer,
-      recommended: 'Hardwired System'
+      recommended: 'Wireless System'
     }
   ];
 

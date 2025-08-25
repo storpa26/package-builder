@@ -100,15 +100,15 @@ export default function WordPressAlarmPackage() {
   // Determine product type based on context and sub-selections
   useEffect(() => {
     if (context === 'residential' && storeyType) {
-      // Residential: Single storey = Wireless, Multi storey = Hardwired
-      const newProductType = storeyType === 'single' ? 'wireless' : 'hardwired';
+      // Residential: Single storey with pitched roof = Hardwired, Multi storey = Wireless
+      const newProductType = storeyType === 'single' ? 'hardwired' : 'wireless';
       if (newProductType !== productType) {
         setProductType(newProductType);
         setSelectedAddons([]); // Reset selections when product type changes
       }
     } else if ((context === 'retail' || context === 'office' || context === 'warehouse') && ceilingType) {
-      // Commercial: Suspended ceiling = Wireless, Concrete ceiling = Hardwired
-      const newProductType = ceilingType === 'suspended' ? 'wireless' : 'hardwired';
+      // Commercial: Tiled/drop ceiling = Hardwired, Solid ceiling = Wireless
+      const newProductType = ceilingType === 'suspended' ? 'hardwired' : 'wireless';
       if (newProductType !== productType) {
         setProductType(newProductType);
         setSelectedAddons([]); // Reset selections when product type changes
