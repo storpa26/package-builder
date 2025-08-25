@@ -200,9 +200,14 @@ export default function WordPressAlarmPackage() {
   };
 
   const handleContextChange = (newContext: Context) => {
-    setContext(newContext);
-    // Could add analytics tracking here
-  };
+     setContext(newContext);
+     // Reset sub-selections when context changes
+     setStoreyType(null);
+     setCeilingType(null);
+     setLeadData(null); // Also reset lead data
+     setSelectedAddons([]); // Reset addon selections
+     // Could add analytics tracking here
+   };
 
   if (loading && wooProducts.length === 0) {
     return (
