@@ -16,6 +16,7 @@ interface HeroProps {
   basePrice: number;
   storeyType: StoreyType | null;
   ceilingType: CeilingType | null;
+  onContextChange: (context: Context) => void;
   onStoreyTypeChange: (type: StoreyType) => void;
   onCeilingTypeChange: (type: CeilingType) => void;
   onLeadSubmit: (leadData: LeadData) => void;
@@ -28,6 +29,7 @@ export function Hero({
   basePrice, 
   storeyType, 
   ceilingType, 
+  onContextChange,
   onStoreyTypeChange, 
   onCeilingTypeChange, 
   onLeadSubmit,
@@ -95,6 +97,30 @@ export function Hero({
                 Professional Installation Included
               </Badge>
               
+              {/* Context Switcher - Right in Hero */}
+              <div className="flex justify-center gap-3 mb-4">
+                <button
+                  onClick={() => onContextChange('residential')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    context === 'residential'
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'bg-muted text-muted-foreground hover:bg-primary/10'
+                  }`}
+                >
+                  🏠 Residential
+                </button>
+                <button
+                  onClick={() => onContextChange('retail')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    context === 'retail'
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'bg-muted text-muted-foreground hover:bg-primary/10'
+                  }`}
+                >
+                  🏢 Retail
+                </button>
+              </div>
+
               <h1 className="text-4xl lg:text-5xl font-bold text-foreground leading-tight">
                 {productName}
                 <span className="text-primary block">(Installed)</span>

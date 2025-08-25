@@ -230,6 +230,7 @@ export default function WordPressAlarmPackage() {
         productType={productType}
         basePrice={basePrice}
         storeyType={storeyType}
+        onContextChange={handleContextChange}
         onStoreyTypeChange={setStoreyType}
         ceilingType={ceilingType}
         onCeilingTypeChange={setCeilingType}
@@ -240,16 +241,6 @@ export default function WordPressAlarmPackage() {
       />
 
       <PackageInclusions context={context} />
-
-      <div className="py-4 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <ContextSwitcher
-            currentContext={context}
-            onContextChange={handleContextChange}
-            assumptions={currentAssumptions}
-          />
-        </div>
-      </div>
 
       {/* Only show add-ons after lead capture */}
       {leadData && (
