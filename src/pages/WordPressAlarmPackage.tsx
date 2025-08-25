@@ -115,6 +115,22 @@ export default function WordPressAlarmPackage() {
       }
     }
   }, [context, storeyType, ceilingType, productType]);
+
+  // Auto-scroll to add-ons section when it appears
+  useEffect(() => {
+    if (leadData) {
+      // Small delay to ensure the add-ons section is rendered
+      setTimeout(() => {
+        const addonsSection = document.querySelector('[data-addons-section]');
+        if (addonsSection) {
+          addonsSection.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }
+      }, 100);
+    }
+  }, [leadData]);
   
   // Dynamic rules engine based on product type
   const rulesEngine = useMemo(() => {
@@ -249,15 +265,17 @@ export default function WordPressAlarmPackage() {
 
       {/* Add-ons Section - Full width below Hero, only after lead capture */}
       {leadData && (
-        <AddOnsSection
-          context={context}
-          productType={productType}
-          selectedAddons={selectedAddons}
-          onUpdateAddons={setSelectedAddons}
-          onAddonProductsChange={handleAddonProductsChange}
-          estimatedTotal={estimatedTotal}
-          onAddToQuote={handleAddToCart}
-        />
+        <div data-addons-section>
+          <AddOnsSection
+            context={context}
+            productType={productType}
+            selectedAddons={selectedAddons}
+            onUpdateAddons={setSelectedAddons}
+            onAddonProductsChange={handleAddonProductsChange}
+            estimatedTotal={estimatedTotal}
+            onAddToQuote={handleAddToCart}
+          />
+        </div>
       )}
 
       <PackageInclusions context={context} />
