@@ -6,17 +6,33 @@ import type { Context } from '@/lib/config';
 import type { WooProduct } from '@/types';
 import { wooApi } from '@/lib/api';
 import { assumptions } from '@/data/assumptions';
-import type { ProductType } from './ProductTypeToggle';
+import { StoreyTypeSelector, StoreyType } from './StoreyTypeSelector';
+import { CeilingTypeSelector, CeilingType } from './CeilingTypeSelector';
+import { LeadCaptureForm, LeadData } from './LeadCaptureForm';
 
 interface HeroProps {
   context: Context;
-  productType: ProductType;
+  productType: 'wireless' | 'hardwired';
   basePrice: number;
-  onGetPackage: () => void;
-  onGetQuote: () => void;
+  storeyType: StoreyType | null;
+  ceilingType: CeilingType | null;
+  onStoreyTypeChange: (type: StoreyType) => void;
+  onCeilingTypeChange: (type: CeilingType) => void;
+  onLeadSubmit: (leadData: LeadData) => void;
+  showAddons: boolean;
 }
 
-export function Hero({ context, productType, basePrice, onGetPackage, onGetQuote }: HeroProps) {
+export function Hero({ 
+  context, 
+  productType, 
+  basePrice, 
+  storeyType, 
+  ceilingType, 
+  onStoreyTypeChange, 
+  onCeilingTypeChange, 
+  onLeadSubmit,
+  showAddons 
+}: HeroProps) {
   const [baseProduct, setBaseProduct] = useState<WooProduct | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +130,33 @@ export function Hero({ context, productType, basePrice, onGetPackage, onGetQuote
                 <span>Expandable system</span>
               </div>
             </div>
+
+            {/* Context-based selectors */}
+            {context === 'residential' && (
+              <div className="pt-6 border-t border-border">
+                <StoreyTypeSelector 
+                  value={storeyType} 
+                  onChange={onStoreyTypeChange} 
+                />
+              </div>
+            )}
+            
+            {(context === 'retail' || context === 'office' || context === 'warehouse') && (
+              <div className="pt-6 border-t border-border">
+                <CeilingTypeSelector 
+                  value={ceilingType} 
+                  onChange={onCeilingTypeChange} 
+                />
+              </div>
+            )}
+
+            {/* Lead Capture Form - Show when sub-selection is made */}
+            {((context === 'residential' && storeyType) || 
+              ((context === 'retail' || context === 'office' || context === 'warehouse') && ceilingType)) && (
+              <div className="pt-6">
+                <LeadCaptureForm onSubmit={onLeadSubmit} />
+              </div>
+            )}
           </div>
 
           {/* Illustration */}

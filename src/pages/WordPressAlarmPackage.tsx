@@ -4,10 +4,13 @@ import { Hero } from '@/components/AlarmPackage/WordPressHero';
 import { PackageInclusions } from '@/components/AlarmPackage/PackageInclusions';
 import { ContextSwitcher } from '@/components/AlarmPackage/ContextSwitcher';
 import { AddOnsSection } from '@/components/AlarmPackage/AddOnsSection';
-import { ProductTypeToggle, ProductType } from '@/components/AlarmPackage/ProductTypeToggle';
+// Removed ProductTypeToggle - now using context-based selection
 import { TechSpecs } from '@/components/AlarmPackage/TechSpecs';
 import { InstallationProcess } from '@/components/AlarmPackage/InstallationProcess';
 // Remove this line: import { StickyCartBar } from '@/components/AlarmPackage/StickyCartBar';
+import { StoreyType } from '@/components/AlarmPackage/StoreyTypeSelector';
+import { CeilingType } from '@/components/AlarmPackage/CeilingTypeSelector';
+import { LeadData } from '@/components/AlarmPackage/LeadCaptureForm';
 import { config, type Context } from '@/lib/config';
 import { wooApi } from '@/lib/api';
 import { productIds } from '@/data/ids';
@@ -31,11 +34,15 @@ export default function WordPressAlarmPackage() {
   
   // State management
   const [context, setContext] = useState<Context>('residential');
-  const [productType, setProductType] = useState<ProductType>('wireless');
+  // Product type now determined by context + sub-selection
+  const [productType, setProductType] = useState<'wireless' | 'hardwired'>('wireless');
+  const [storeyType, setStoreyType] = useState<StoreyType | null>(null);
+  const [ceilingType, setCeilingType] = useState<CeilingType | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>([]);
   const [wizardAnswers, setWizardAnswers] = useState<Record<string, unknown>>({});
   const [wooProducts, setWooProducts] = useState<WooProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [leadData, setLeadData] = useState<LeadData | null>(null);
 
   // Initialize from URL parameters (wizard integration)
   useEffect(() => {
@@ -89,6 +96,25 @@ export default function WordPressAlarmPackage() {
   const handleAddonProductsChange = (products: Addon[]) => {
     setAddonProducts(products);
   };
+
+  // Determine product type based on context and sub-selections
+  useEffect(() => {
+    if (context === 'residential' && storeyType) {
+      // Residential: Single storey = Wireless, Multi storey = Hardwired
+      const newProductType = storeyType === 'single' ? 'wireless' : 'hardwired';
+      if (newProductType !== productType) {
+        setProductType(newProductType);
+        setSelectedAddons([]); // Reset selections when product type changes
+      }
+    } else if ((context === 'retail' || context === 'office' || context === 'warehouse') && ceilingType) {
+      // Commercial: Suspended ceiling = Wireless, Concrete ceiling = Hardwired
+      const newProductType = ceilingType === 'suspended' ? 'wireless' : 'hardwired';
+      if (newProductType !== productType) {
+        setProductType(newProductType);
+        setSelectedAddons([]); // Reset selections when product type changes
+      }
+    }
+  }, [context, storeyType, ceilingType, productType]);
   
   // Dynamic rules engine based on product type
   const rulesEngine = useMemo(() => {
@@ -167,6 +193,12 @@ export default function WordPressAlarmPackage() {
     handleAddToCart();
   };
 
+  const handleLeadSubmit = (data: LeadData) => {
+    setLeadData(data);
+    console.log('Lead captured:', data);
+    // TODO: Send to GHL later
+  };
+
   const handleContextChange = (newContext: Context) => {
     setContext(newContext);
     // Could add analytics tracking here
@@ -186,22 +218,18 @@ export default function WordPressAlarmPackage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Product Type Toggle - At the very top */}
-      <div className="py-8 px-4 bg-background border-b">
-        <div className="container mx-auto max-w-6xl">
-          <ProductTypeToggle
-            value={productType}
-            onChange={(newType) => {
-              setProductType(newType);
-              setSelectedAddons([]); // Reset selections when switching product types
-            }}
-          />
-        </div>
-      </div>
+      {/* Removed ProductTypeToggle - now using context-based selection */}
 
       <Hero
         context={context}
         productType={productType}
         basePrice={basePrice}
+        storeyType={storeyType}
+        onStoreyTypeChange={setStoreyType}
+        ceilingType={ceilingType}
+        onCeilingTypeChange={setCeilingType}
+        onLeadSubmit={handleLeadSubmit}
+        showAddons={selectedAddons.length > 0}
         onGetPackage={handleAddToCart}
         onGetQuote={handleGetQuote}
       />
@@ -218,15 +246,18 @@ export default function WordPressAlarmPackage() {
         </div>
       </div>
 
-      <AddOnsSection
-        context={context}
-        productType={productType}
-        selectedAddons={selectedAddons}
-        onUpdateAddons={setSelectedAddons}
-        onAddonProductsChange={handleAddonProductsChange}
-        estimatedTotal={estimatedTotal}
-        onAddToQuote={handleAddToCart}
-      />
+      {/* Only show add-ons after lead capture */}
+      {leadData && (
+        <AddOnsSection
+          context={context}
+          productType={productType}
+          selectedAddons={selectedAddons}
+          onUpdateAddons={setSelectedAddons}
+          onAddonProductsChange={handleAddonProductsChange}
+          estimatedTotal={estimatedTotal}
+          onAddToQuote={handleAddToCart}
+        />
+      )}
 
       <TechSpecs />
 
