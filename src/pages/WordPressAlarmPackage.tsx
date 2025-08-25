@@ -198,47 +198,22 @@ export default function WordPressAlarmPackage() {
     console.log('Lead captured:', data);
     // TODO: Send to GHL later
     
-    // Auto-add base package to cart
-    try {
-      const baseProductData = await wooApi.getBaseAlarmProduct(productType);
-      if (baseProductData) {
-        await wooApi.addItemsToCart([{
-          id: baseProductData.id,
-          quantity: 1,
-          meta: {
-            product_type: productType,
-            context: context,
-            lead_name: data.name,
-            lead_email: data.email,
-            lead_phone: data.phone,
-            timestamp: new Date().toISOString()
-          }
-        }]);
-        console.log('Base package added to cart automatically');
-        toast({
-          title: "Added to Cart",
-          description: `${baseProductData.name} has been added to your cart.`,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to add base package to cart:', error);
-      toast({
-        title: "Note",
-        description: "Lead captured successfully. You can customize your package below.",
-        variant: "default",
-      });
-    }
+    // Show success message
+    toast({
+      title: "Lead Captured",
+      description: "Thank you! You can now customize your package below.",
+    });
   };
 
   const handleContextChange = (newContext: Context) => {
-     setContext(newContext);
-     // Reset sub-selections when context changes
-     setStoreyType(null);
-     setCeilingType(null);
-     setLeadData(null); // Also reset lead data
-     setSelectedAddons([]); // Reset addon selections
-     // Could add analytics tracking here
-   };
+       setContext(newContext);
+       // Reset sub-selections when context changes
+       setStoreyType(null);
+       setCeilingType(null);
+       setLeadData(null); // Also reset lead data
+       setSelectedAddons([]); // Reset addon selections
+       // Could add analytics tracking here
+     };
 
   if (loading && wooProducts.length === 0) {
     return (

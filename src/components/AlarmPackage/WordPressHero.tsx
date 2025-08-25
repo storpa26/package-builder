@@ -178,19 +178,20 @@ export function Hero({
               </div>
             )}
 
-            {/* Lead Capture Form - Show when sub-selection is made and no lead data yet */}
-            {((context === 'residential' && storeyType) || 
-              ((context === 'retail' || context === 'office' || context === 'warehouse') && ceilingType)) && 
-              !leadData && (
-              <div className="pt-6">
-                <LeadCaptureForm onSubmit={onLeadSubmit} />
-              </div>
-            )}
           </div>
 
-          {/* Right Side - Illustration */}
+          {/* Right Side - Lead Form or Illustration */}
           <div className="flex justify-center lg:justify-end">
-            <div className="relative">
+            {/* Show Lead Form when conditions are met */}
+            {((context === 'residential' && storeyType) || 
+              ((context === 'retail' || context === 'office' || context === 'warehouse') && ceilingType)) && 
+              !leadData ? (
+              <div className="w-full max-w-md">
+                <LeadCaptureForm onSubmit={onLeadSubmit} />
+              </div>
+            ) : (
+              /* Show Illustration when no lead form */
+              <div className="relative">
                 {/* Product Image or Fallback Illustration */}
                 {baseProduct?.images && baseProduct.images.length > 0 ? (
                   <div className="relative">
@@ -305,14 +306,16 @@ export function Hero({
                 )}
                 
                 {/* Floating badges */}
-                 <div className="absolute -top-4 -right-4 animate-pulse">
-                   <Badge className="bg-secondary text-secondary-foreground">
-                     <Shield className="w-3 h-3 mr-1" />
-                     Protected
-                   </Badge>
-                 </div>
-               </div>
-           </div>
+                  <div className="absolute -top-4 -right-4 animate-pulse">
+                    <Badge className="bg-secondary text-secondary-foreground">
+                      <Shield className="w-3 h-3 mr-1" />
+                      Protected
+                    </Badge>
+                  </div>
+                </div>
+              )
+            }
+          </div>
         </div>
       </div>
     </section>

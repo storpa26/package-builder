@@ -107,7 +107,7 @@ export function LeadCaptureForm({ onSubmit, isLoading = false }: LeadCaptureForm
             ) : (
               <>
                 <ShoppingCart className="h-4 w-4 mr-2" />
-                Add to Cart
+                Proceed
               </>
             )}
           </Button>
