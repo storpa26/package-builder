@@ -99,6 +99,13 @@ class WooCommerceAPI {
   /** Fetch products with tag/category "alarm-addon" */
   async getAlarmAddonProducts(productType: 'wireless' | 'hardwired' = 'wireless', perPage = 100): Promise<WooProduct[]> {
     try {
+      // Safety check for undefined productType
+      if (!productType || !config.products[productType]) {
+        console.error('❌ Invalid productType:', productType);
+        console.error('❌ Available configs:', Object.keys(config.products));
+        throw new Error(`Invalid product type: ${productType}`);
+      }
+      
       const productConfig = config.products[productType];
       
       if (productType === 'wireless') {
@@ -120,6 +127,13 @@ class WooCommerceAPI {
 
   async getBaseAlarmProduct(productType: 'wireless' | 'hardwired' = 'wireless'): Promise<WooProduct | null> {
     try {
+      // Safety check for undefined productType
+      if (!productType || !config.products[productType]) {
+        console.error('❌ Invalid productType:', productType);
+        console.error('❌ Available configs:', Object.keys(config.products));
+        throw new Error(`Invalid product type: ${productType}`);
+      }
+      
       const productConfig = config.products[productType];
       
       if (productType === 'wireless') {
@@ -143,6 +157,13 @@ class WooCommerceAPI {
 
   async getAutoRequiredProducts(productType: 'wireless' | 'hardwired' = 'wireless', perPage = 100): Promise<WooProduct[]> {
     try {
+      // Safety check for undefined productType
+      if (!productType || !config.products[productType]) {
+        console.error('❌ Invalid productType:', productType);
+        console.error('❌ Available configs:', Object.keys(config.products));
+        throw new Error(`Invalid product type: ${productType}`);
+      }
+      
       if (productType === 'wireless') {
         // Use original working wireless API call
         return await this.getProducts({ tag: 'auto-required', per_page: perPage });

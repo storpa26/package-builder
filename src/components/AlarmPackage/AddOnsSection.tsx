@@ -52,6 +52,12 @@ export function AddOnsSection({
   useEffect(() => {
     const fetchAddonProducts = async () => {
       try {
+        // Safety check - don't fetch if productType is invalid
+        if (!productType) {
+          console.warn('⚠️ ProductType is undefined, skipping API call');
+          return;
+        }
+        
         setIsLoading(true);
         setError(null);
         
