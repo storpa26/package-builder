@@ -42,20 +42,10 @@ export function Hero({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchBaseProduct = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const product = await wooApi.getBaseAlarmProduct(productType);
-        setBaseProduct(product);
-        setIsLoading(false);
-      } catch (err) {
-        setError('Failed to load product information');
-        setIsLoading(false);
-      }
-    };
-
-    fetchBaseProduct();
+    // Skip API call on initial load to prevent errors
+    // Base product will be loaded when needed after form submission
+    setIsLoading(false);
+    setBaseProduct(null);
   }, [productType]);
 
   // Get product data - use WooCommerce data if available, fallback to static
@@ -187,7 +177,22 @@ export function Hero({
               ((context === 'retail' || context === 'office' || context === 'warehouse') && ceilingType)) && 
               !leadData ? (
               <div className="w-full max-w-md">
-                <LeadCaptureForm onSubmit={onLeadSubmit} />
+                <LeadCaptureForm 
+                  onSubmit={onLeadSubmit}
+                  productContext={{
+                    productType: productType,
+                    context: context,
+                    estimatedTotal: basePrice
+                  }}
+                  propertyContext={{
+                    propertyType: context,
+                    buildingType: context === 'residential' 
+                      ? (storeyType === 'single' ? 'Single Storey' : 'Multi Storey')
+                      : (ceilingType === 'suspended' ? 'Drop Ceiling' : ceilingType === 'solid' ? 'Solid Ceiling' : 'Other'),
+                    storeyType: storeyType || undefined,
+                    ceilingType: ceilingType || undefined
+                  }}
+                />
               </div>
             ) : (
               /* Show Illustration when no lead form */

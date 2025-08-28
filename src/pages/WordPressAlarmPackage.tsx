@@ -41,7 +41,7 @@ export default function WordPressAlarmPackage() {
   const [selectedAddons, setSelectedAddons] = useState<SelectedAddon[]>([]);
   const [wizardAnswers, setWizardAnswers] = useState<Record<string, unknown>>({});
   const [wooProducts, setWooProducts] = useState<WooProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Changed to false since we load products after form submission
   const [leadData, setLeadData] = useState<LeadData | null>(null);
 
   // Initialize from URL parameters (wizard integration)
@@ -66,27 +66,22 @@ export default function WordPressAlarmPackage() {
     }
   }, []);
 
-  // Load WooCommerce products
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        setLoading(true);
-        // Replace getProducts with getAlarmAddonProducts
-        const products = await wooApi.getAlarmAddonProducts(50);
-        setWooProducts(products);
-      } catch (error) {
-        toast({
-          title: "Failed to load products",
-          description: "Using offline data instead.",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
+  // Load WooCommerce products - moved to after form submission
+  const loadProducts = async (productType: 'wireless' | 'hardwired') => {
+    try {
+      setLoading(true);
+      const products = await wooApi.getAlarmAddonProducts(productType, 50);
+      setWooProducts(products);
+    } catch (error) {
+      toast({
+        title: "Failed to load products",
+        description: "Using offline data instead.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
-
-    loadProducts();
-  }, [toast]);
+  };
 
   // Rules engine and calculations
   // Add this state to WordPressAlarmPackage component
@@ -212,7 +207,9 @@ export default function WordPressAlarmPackage() {
   const handleLeadSubmit = async (data: LeadData) => {
     setLeadData(data);
     console.log('Lead captured:', data);
-    // TODO: Send to GHL later
+    
+    // Load products after form submission
+    await loadProducts(productType);
     
     // Show success message
     toast({
@@ -231,12 +228,12 @@ export default function WordPressAlarmPackage() {
        // Could add analytics tracking here
      };
 
-  if (loading && wooProducts.length === 0) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading alarm packages...</p>
+          <p className="text-muted-foreground">Loading your customized package...</p>
         </div>
       </div>
     );

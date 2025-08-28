@@ -2,29 +2,136 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ShoppingCart, User, Mail, Phone } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ShoppingCart, User, Mail, Phone, MapPin, Hash, CheckCircle, AlertCircle } from 'lucide-react';
 
 export interface LeadData {
   name: string;
   email: string;
   phone: string;
+  address: string;
+  postcode: string;
+  productContext?: {
+    productType: string;
+    context: string;
+    selectedAddons?: string[];
+    estimatedTotal?: number;
+  };
+  propertyContext?: {
+    propertyType: string; // residential, retail, office, warehouse
+    buildingType: string; // single/multi storey, ceiling type, etc.
+    storeyType?: string;
+    ceilingType?: string;
+  };
 }
 
 interface LeadCaptureFormProps {
   onSubmit: (leadData: LeadData) => void;
   isLoading?: boolean;
+  productContext?: {
+    productType: string;
+    context: string;
+    selectedAddons?: string[];
+    estimatedTotal?: number;
+  };
+  propertyContext?: {
+    propertyType: string;
+    buildingType: string;
+    storeyType?: string;
+    ceilingType?: string;
+  };
 }
 
-export function LeadCaptureForm({ onSubmit, isLoading = false }: LeadCaptureFormProps) {
+export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, propertyContext }: LeadCaptureFormProps) {
   const [formData, setFormData] = useState<LeadData>({
     name: '',
     email: '',
-    phone: ''
+    phone: '',
+    address: '',
+    postcode: '',
+    productContext,
+    propertyContext
   });
+  const [errors, setErrors] = useState<Partial<Record<keyof LeadData, string>>>({});
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitMessage, setSubmitMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Validation functions
+  const validatePhone = (phone: string): boolean => {
+    // Australian phone number validation (mobile and landline)
+    const mobileRegex = /^(\+61|0)[4-5]\d{8}$/;
+    const landlineRegex = /^(\+61|0)[2-8]\d{8}$/;
+    const cleanPhone = phone.replace(/\s+/g, '');
+    return mobileRegex.test(cleanPhone) || landlineRegex.test(cleanPhone);
+  };
+
+  const validatePostcode = (postcode: string): boolean => {
+    // Australian postcode validation (4 digits)
+    return /^\d{4}$/.test(postcode);
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof LeadData, string>> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!validatePhone(formData.phone)) {
+      newErrors.phone = 'Please enter a valid Australian phone number';
+    }
+
+    if (!formData.address.trim()) {
+      newErrors.address = 'Address is required';
+    }
+
+    if (!formData.postcode.trim()) {
+      newErrors.postcode = 'Postcode is required';
+    } else if (!validatePostcode(formData.postcode)) {
+      newErrors.postcode = 'Please enter a valid 4-digit Australian postcode';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setSubmitStatus('idle');
+    setSubmitMessage('');
+
+    try {
+      // Import the GHL API function
+      const { submitLeadToGHL } = await import('@/lib/ghl-api');
+      
+      // Submit to GoHighLevel
+      const result = await submitLeadToGHL(formData);
+      
+      if (result.success) {
+        setSubmitStatus('success');
+        setSubmitMessage('Thank you! Your information has been submitted successfully. We\'ll contact you soon.');
+        // Call the original onSubmit for any additional handling
+        onSubmit(formData);
+      } else {
+        throw new Error('Failed to submit lead');
+      }
+    } catch (error) {
+      setSubmitStatus('error');
+      setSubmitMessage(error instanceof Error ? error.message : 'An error occurred. Please try again.');
+    }
   };
 
   const handleInputChange = (field: keyof LeadData, value: string) => {
@@ -32,6 +139,14 @@ export function LeadCaptureForm({ onSubmit, isLoading = false }: LeadCaptureForm
       ...prev,
       [field]: value
     }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
+    }
   };
 
   return (
@@ -39,81 +154,180 @@ export function LeadCaptureForm({ onSubmit, isLoading = false }: LeadCaptureForm
       <CardHeader className="text-center pb-4">
         <CardTitle className="flex items-center justify-center gap-2 text-lg">
           <ShoppingCart className="h-5 w-5" />
-          Add to Cart
+          Get Your Quote
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Get your personalized quote and explore add-on options
+          {productContext ? 
+            `Get pricing for ${productContext.productType} ${productContext.context} system` :
+            'Get your personalized quote and explore add-on options'
+          }
         </p>
       </CardHeader>
       
       <CardContent>
+        {/* Success/Error Messages */}
+        {submitStatus === 'success' && (
+          <Alert className="mb-4 border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              {submitMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {submitStatus === 'error' && (
+          <Alert className="mb-4 border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {submitMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="name" className="flex items-center gap-2 text-sm font-medium">
               <User className="h-4 w-4" />
-              Name
+              Full Name *
             </label>
             <Input
               id="name"
               type="text"
-              placeholder="Enter your name"
+              placeholder="Enter your full name"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
-              className="w-full"
+              className={`w-full ${errors.name ? 'border-red-500' : ''}`}
+              required
             />
+            {errors.name && <p className="text-xs text-red-600">{errors.name}</p>}
           </div>
           
           <div className="space-y-2">
             <label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
               <Mail className="h-4 w-4" />
-              Email
+              Email Address *
             </label>
             <Input
               id="email"
               type="email"
-              placeholder="Enter your email"
+              placeholder="Enter your email address"
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              className="w-full"
+              className={`w-full ${errors.email ? 'border-red-500' : ''}`}
+              required
             />
+            {errors.email && <p className="text-xs text-red-600">{errors.email}</p>}
           </div>
           
           <div className="space-y-2">
             <label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
               <Phone className="h-4 w-4" />
-              Phone
+              Phone Number *
             </label>
             <Input
               id="phone"
               type="tel"
-              placeholder="Enter your phone number"
+              placeholder="04XX XXX XXX or 02 XXXX XXXX"
               value={formData.phone}
               onChange={(e) => handleInputChange('phone', e.target.value)}
-              className="w-full"
+              className={`w-full ${errors.phone ? 'border-red-500' : ''}`}
+              required
             />
+            {errors.phone && <p className="text-xs text-red-600">{errors.phone}</p>}
           </div>
+
+          <div className="space-y-2">
+            <label htmlFor="address" className="flex items-center gap-2 text-sm font-medium">
+              <MapPin className="h-4 w-4" />
+              Property Address *
+            </label>
+            <Input
+              id="address"
+              type="text"
+              placeholder="Enter your property address"
+              value={formData.address}
+              onChange={(e) => handleInputChange('address', e.target.value)}
+              className={`w-full ${errors.address ? 'border-red-500' : ''}`}
+              required
+            />
+            {errors.address && <p className="text-xs text-red-600">{errors.address}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="postcode" className="flex items-center gap-2 text-sm font-medium">
+              <Hash className="h-4 w-4" />
+              Postcode *
+            </label>
+            <Input
+              id="postcode"
+              type="text"
+              placeholder="e.g. 2000"
+              value={formData.postcode}
+              onChange={(e) => handleInputChange('postcode', e.target.value)}
+              className={`w-full ${errors.postcode ? 'border-red-500' : ''}`}
+              maxLength={4}
+              required
+            />
+            {errors.postcode && <p className="text-xs text-red-600">{errors.postcode}</p>}
+          </div>
+
+          {/* Product & Property Context Display */}
+          {(productContext || propertyContext) && (
+            <div className="bg-muted/50 p-3 rounded-lg text-sm">
+              <p className="font-medium mb-2">Quote Details:</p>
+              
+              {productContext && (
+                <div className="mb-2">
+                  <p className="text-muted-foreground">
+                    <span className="font-medium">System:</span> {productContext.productType} {productContext.context}
+                    {productContext.estimatedTotal && (
+                      <span className="font-medium text-primary ml-2">
+                        Est. ${productContext.estimatedTotal.toLocaleString()}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+              
+              {propertyContext && (
+                <div>
+                  <p className="text-muted-foreground">
+                    <span className="font-medium">Property:</span> {propertyContext.propertyType}
+                    {propertyContext.buildingType && (
+                      <span className="ml-1">({propertyContext.buildingType})</span>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           
           <Button 
             type="submit" 
             className="w-full" 
             size="lg"
-            disabled={isLoading}
+            disabled={isLoading || submitStatus === 'success'}
           >
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                Processing...
+                Submitting...
+              </>
+            ) : submitStatus === 'success' ? (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Submitted Successfully
               </>
             ) : (
               <>
                 <ShoppingCart className="h-4 w-4 mr-2" />
-                Proceed
+                Get My Quote
               </>
             )}
           </Button>
           
           <p className="text-xs text-muted-foreground text-center">
-            No spam, just your personalized security solution
+            * Required fields. We respect your privacy and won't spam you.
           </p>
         </form>
       </CardContent>
