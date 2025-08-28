@@ -16,6 +16,7 @@ export interface LeadData {
     context: string;
     selectedAddons?: string[];
     estimatedTotal?: number;
+    productName?: string;
   };
   propertyContext?: {
     propertyType: string; // residential, retail, office, warehouse
@@ -33,6 +34,7 @@ interface LeadCaptureFormProps {
     context: string;
     selectedAddons?: string[];
     estimatedTotal?: number;
+    productName?: string;
   };
   propertyContext?: {
     propertyType: string;
@@ -277,17 +279,17 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
               <p className="font-medium mb-2">Quote Details:</p>
               
               {productContext && (
-                <div className="mb-2">
-                  <p className="text-muted-foreground">
-                    <span className="font-medium">System:</span> {productContext.productType} {productContext.context}
-                    {productContext.estimatedTotal && (
-                      <span className="font-medium text-primary ml-2">
-                        Est. ${productContext.estimatedTotal.toLocaleString()}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              )}
+                 <div className="mb-2">
+                   <p className="text-muted-foreground">
+                     <span className="font-medium">System:</span> {productContext.productName || `${productContext.productType} ${productContext.context} System`}
+                     {productContext.estimatedTotal && (
+                       <span className="font-medium text-primary ml-2">
+                         Est. ${productContext.estimatedTotal.toLocaleString()}
+                       </span>
+                     )}
+                   </p>
+                 </div>
+               )}
               
               {propertyContext && (
                 <div>

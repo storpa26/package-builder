@@ -11,7 +11,8 @@ export default function TestLeadForm() {
     productType: 'Wireless',
     context: 'Residential',
     selectedAddons: ['Door Sensor', 'Motion Detector', 'Touchscreen Keypad'],
-    estimatedTotal: 1299
+    estimatedTotal: 1299,
+    productName: 'Hybrid Wireless Alarm System'
   };
 
   return (

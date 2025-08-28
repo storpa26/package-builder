@@ -182,7 +182,8 @@ export function Hero({
                   productContext={{
                     productType: productType,
                     context: context,
-                    estimatedTotal: basePrice
+                    estimatedTotal: basePrice,
+                    productName: productName
                   }}
                   propertyContext={{
                     propertyType: context,

@@ -12,6 +12,13 @@ interface LeadData {
     context: string;
     selectedAddons?: string[];
     estimatedTotal?: number;
+    productName?: string;
+  };
+  propertyContext?: {
+    propertyType: string;
+    buildingType: string;
+    storeyType?: string;
+    ceilingType?: string;
   };
 }
 
@@ -78,6 +85,7 @@ export async function submitLeadToGHL(leadData: LeadData): Promise<{ success: bo
       // Product context
       if (leadData.productContext) {
         contactData.customFields.push(
+          { key: 'product_name', field_value: leadData.productContext.productName || `${leadData.productContext.productType} ${leadData.productContext.context} System` },
           { key: 'product_type', field_value: leadData.productContext.productType },
           { key: 'product_context', field_value: leadData.productContext.context },
           { key: 'estimated_total', field_value: leadData.productContext.estimatedTotal || 0 },
@@ -118,6 +126,7 @@ export async function submitLeadToGHL(leadData: LeadData): Promise<{ success: bo
     }
 
     console.log('Submitting contact to GoHighLevel...');
+    console.log('Contact data being sent:', JSON.stringify(contactData, null, 2));
 
     // Submit to GoHighLevel Contacts API
     const response = await fetch('https://services.leadconnectorhq.com/contacts/', {
