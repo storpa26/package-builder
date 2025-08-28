@@ -190,8 +190,8 @@ export function Hero({
                     buildingType: context === 'residential' 
                       ? (storeyType === 'single' ? 'Single Storey' : 'Multi Storey')
                       : (ceilingType === 'suspended' ? 'Drop Ceiling' : ceilingType === 'solid' ? 'Solid Ceiling' : 'Other'),
-                    storeyType: storeyType || undefined,
-                    ceilingType: ceilingType || undefined
+                    storeyType: context === 'residential' ? storeyType || undefined : undefined,
+                    ceilingType: context !== 'residential' ? ceilingType || undefined : undefined
                   }}
                 />
               </div>
