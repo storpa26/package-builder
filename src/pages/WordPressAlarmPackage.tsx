@@ -338,19 +338,6 @@ export default function WordPressAlarmPackage() {
     // For now, same as Add to Cart
     handleAddToCart();
   };
-  
-  // Test reload function for debugging
-  const testReload = () => {
-    console.log('🧪 TEST RELOAD BUTTON CLICKED');
-    toast({
-      title: "Testing Reload",
-      description: "Page will reload in 2 seconds...",
-    });
-    setTimeout(() => {
-      console.log('🔄 TEST RELOAD EXECUTING NOW!');
-      window.location.reload();
-    }, 2000);
-  };
 
   const handleLeadSubmit = async (data: LeadData) => {
     setLeadData(data);
@@ -406,7 +393,6 @@ export default function WordPressAlarmPackage() {
         leadData={leadData}
         onGetPackage={handleAddToCart}
         onGetQuote={handleGetQuote}
-        testReload={testReload}
       />
 
       {/* Add-ons Section - Full width below Hero, only after lead capture */}
