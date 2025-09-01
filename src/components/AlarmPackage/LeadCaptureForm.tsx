@@ -124,7 +124,11 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
       
       if (result.success) {
         setSubmitStatus('success');
-        setSubmitMessage('🎉 Thank you for your interest! We\'ve received your details and will be in touch within 24 hours with your personalized quote.');
+        const isGHLDisabled = import.meta.env.VITE_DISABLE_GHL_INTEGRATION === 'true';
+        const message = isGHLDisabled 
+          ? '🔧 Development Mode: Form submitted successfully (GHL integration disabled)'
+          : '🎉 Thank you for your interest! We\'ve received your details and will be in touch within 24 hours with your personalized quote.';
+        setSubmitMessage(message);
         // Call the original onSubmit for any additional handling
         onSubmit(formData);
       } else {

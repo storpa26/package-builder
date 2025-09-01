@@ -22,6 +22,9 @@ interface HeroProps {
   onLeadSubmit: (leadData: LeadData) => void;
   showAddons: boolean;
   leadData: LeadData | null;
+  onGetPackage: () => void;
+  onGetQuote: () => void;
+  testReload?: () => void;
 }
 
 export function Hero({ 
@@ -35,7 +38,10 @@ export function Hero({
   onCeilingTypeChange, 
   onLeadSubmit,
   showAddons,
-  leadData 
+  leadData,
+  onGetPackage,
+  onGetQuote,
+  testReload
 }: HeroProps) {
   const [baseProduct, setBaseProduct] = useState<WooProduct | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -194,6 +200,20 @@ export function Hero({
                     ceilingType: context !== 'residential' ? ceilingType || undefined : undefined
                   }}
                 />
+                
+                {/* Debug: Test Reload Button */}
+                {testReload && (
+                  <div className="mt-4">
+                    <Button 
+                      onClick={testReload}
+                      variant="outline"
+                      size="sm"
+                      className="w-full bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                    >
+                      🧪 Test Page Reload (Debug)
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               /* Show Illustration when no lead form */

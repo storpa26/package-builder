@@ -50,6 +50,23 @@ interface GHLResponse {
  * Note: In production, this should be called from a backend API to keep tokens secure
  */
 export async function submitLeadToGHL(leadData: LeadData): Promise<{ success: boolean; message: string; contactId?: string }> {
+  // Check if GHL integration is disabled for development
+  const isGHLDisabled = import.meta.env.VITE_DISABLE_GHL_INTEGRATION === 'true';
+  
+  if (isGHLDisabled) {
+    console.log('🔧 GHL Integration disabled for development - using mock response');
+    console.log('📋 Lead data that would be sent:', leadData);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return {
+      success: true,
+      message: 'Lead submitted successfully (mock)',
+      contactId: 'mock-contact-' + Date.now()
+    };
+  }
+  
   try {
     // For development/demo - in production, these should come from your backend
     const GHL_TOKEN = 'pit-7299b9f4-9173-43d6-b5f9-2074b1c7dfb4';

@@ -540,19 +540,34 @@ function extractBullets(html: string): string[] {
       const itemCount = finalCart.items?.length || 0;
       const totalPrice = finalCart.totals?.total_price || '0';
       
+      // Save current state to localStorage before page reload
+      const stateToSave = {
+        selectedAddons,
+        context,
+        productType,
+        estimatedTotal,
+        timestamp: Date.now()
+      };
+      
+      try {
+        localStorage.setItem('addons-section-state', JSON.stringify(stateToSave));
+        console.log('💾 AddOnsSection: State saved to localStorage before reload');
+      } catch (error) {
+        console.error('Failed to save AddOnsSection state:', error);
+      }
+      
       // Show success message
       toast({
-        title: "Items Added to Cart!",
-        description: `Successfully added ${addedCount} items. Cart total: ${totalPrice}`,
+        title: "🎉 Items Added to Cart!",
+        description: `Successfully added ${addedCount} items. Refreshing to update cart...`,
       });
       
-      // Redirect to cart page after a short delay
-      // setTimeout(() => {
-      //   const cartUrl = window.location.origin.includes('localhost') 
-      //     ? 'https://cheapalarms.com.au/cart/' 
-      //     : '/cart/';
-      //   window.location.href = cartUrl;
-      // }, 1500);
+      // Force page reload to trigger Xootix Side Cart update
+      console.log('🔄 AddOnsSection: Reloading page to update cart...');
+      setTimeout(() => {
+        console.log('🔄 AddOnsSection: EXECUTING PAGE RELOAD NOW!');
+        window.location.reload();
+      }, 1000);
        
      } catch (err) {
        console.error('❌ Cart operation failed:', err);

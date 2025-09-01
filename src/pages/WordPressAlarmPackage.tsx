@@ -21,6 +21,26 @@ import { SelectedAddon, RulesEngine } from '@/lib/rules';
 import { useToast } from '@/hooks/use-toast';
 import type { Addon } from '@/types'; // Add this import
 
+// jQuery interface for Xootix Side Cart integration
+interface JQueryElement {
+  hasClass: (className: string) => boolean;
+  length: number;
+  trigger: (event: string, data?: unknown[]) => void;
+}
+
+interface WindowWithJQuery extends Window {
+  jQuery?: (selector: string) => JQueryElement & {
+    post: (url: string, data: Record<string, string>, callback: (response: { fragments?: Record<string, string> }) => void) => {
+      fail: (callback: (xhr: unknown, status: string, error: string) => void) => void;
+    };
+    each: (obj: Record<string, string>, callback: (key: string, value: string) => void) => void;
+  };
+  wc_cart_fragments_params?: unknown;
+  wc_add_to_cart_params?: { ajax_url: string };
+  xoo_wsc_params?: unknown;
+  xoo_wsc?: { refresh?: () => void; update_cart?: () => void };
+}
+
 export default function WordPressAlarmPackage() {
   // Replace useSearchParams with URLSearchParams
   const getUrlParams = () => {
@@ -66,6 +86,66 @@ export default function WordPressAlarmPackage() {
     }
   }, []);
 
+  // Restore state from localStorage after page reload
+  useEffect(() => {
+    const restoreState = () => {
+      try {
+        const savedState = localStorage.getItem('alarm-configurator-state');
+        if (savedState) {
+          const parsed = JSON.parse(savedState);
+          
+          // Check if state is not too old (24 hours)
+          const isStateValid = parsed.timestamp && (Date.now() - parsed.timestamp) < 24 * 60 * 60 * 1000;
+          
+          if (isStateValid) {
+            console.log('🔄 Restoring state from localStorage:', parsed);
+            
+            // Restore all state
+            if (parsed.leadData) setLeadData(parsed.leadData);
+            if (parsed.productType) setProductType(parsed.productType);
+            if (parsed.context) setContext(parsed.context);
+            if (parsed.storeyType) setStoreyType(parsed.storeyType);
+            if (parsed.ceilingType) setCeilingType(parsed.ceilingType);
+            if (parsed.wizardAnswers) setWizardAnswers(parsed.wizardAnswers);
+            
+            // Restore selected addons
+             if (parsed.selectedAddons && Array.isArray(parsed.selectedAddons)) {
+               const restoredAddons = parsed.selectedAddons.map((addon: {
+                 id: string;
+                 name: string;
+                 qty: number;
+                 price: number;
+               }) => ({
+                 id: addon.id,
+                 name: addon.name,
+                 qty: addon.qty,
+                 price: addon.price
+               }));
+               setSelectedAddons(restoredAddons);
+             }
+            
+            // Clear the saved state after restoration
+            localStorage.removeItem('alarm-configurator-state');
+            
+            toast({
+              title: "✅ State Restored!",
+              description: "Your configuration has been restored after cart update.",
+            });
+          } else {
+            console.log('⏰ Saved state is too old, clearing...');
+            localStorage.removeItem('alarm-configurator-state');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to restore state:', error);
+        localStorage.removeItem('alarm-configurator-state');
+      }
+    };
+    
+    // Restore state on component mount
+    restoreState();
+  }, [toast]);
+
   // Load WooCommerce products - moved to after form submission
   const loadProducts = async (productType: 'wireless' | 'hardwired') => {
     try {
@@ -82,6 +162,8 @@ export default function WordPressAlarmPackage() {
       setLoading(false);
     }
   };
+
+
 
   // Rules engine and calculations
   // Add this state to WordPressAlarmPackage component
@@ -146,7 +228,24 @@ export default function WordPressAlarmPackage() {
   const basePrice = config.system.basePrice[context];
 
   const handleAddToCart = async () => {
+    console.log('🚀 handleAddToCart called');
+    console.log('📋 leadData:', leadData);
+    console.log('📋 selectedAddons:', selectedAddons);
+    
+    if (!leadData || selectedAddons.length === 0) {
+      console.log('❌ Missing information, showing toast');
+      toast({
+        title: "Missing information",
+        description: "Please complete the form and select add-ons first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('✅ All data available, proceeding with cart addition');
+    
     try {
+      console.log('🔄 Starting cart addition process...');
       setLoading(true);
 
       // Build selection payload
@@ -159,9 +258,13 @@ export default function WordPressAlarmPackage() {
         context,
         answers: wizardAnswers
       };
+      
+      console.log('📦 Selection payload:', selection);
 
       // Validate configuration with WordPress backend
+      console.log('🔍 Validating configuration...');
       const validationResult: ValidationResult = await wooApi.validateConfiguration(selection);
+      console.log('✅ Validation result:', validationResult);
 
       // Add items to WooCommerce cart
       const cartItems = validationResult.normalized.map(item => ({
@@ -174,18 +277,50 @@ export default function WordPressAlarmPackage() {
           timestamp: new Date().toISOString()
         }
       }));
-
+      
+      console.log('🛒 Cart items to add:', cartItems);
+      console.log('📡 Adding items to WooCommerce cart...');
       await wooApi.addItemsToCart(cartItems);
+      console.log('✅ Items successfully added to cart');
 
+      // Save current state to localStorage before page reload
+      const stateToSave = {
+        leadData,
+        productType,
+        context,
+        storeyType,
+        ceilingType,
+        selectedAddons: selectedAddons.map(addon => ({
+          id: addon.id,
+          name: addon.name,
+          qty: addon.qty,
+          price: addon.price
+        })),
+        wizardAnswers,
+        timestamp: Date.now()
+      };
+      
+      try {
+        localStorage.setItem('alarm-configurator-state', JSON.stringify(stateToSave));
+        console.log('💾 State saved to localStorage before reload');
+      } catch (error) {
+        console.error('Failed to save state:', error);
+      }
+
+      console.log('🎉 Cart addition complete, showing toast and preparing reload...');
       toast({
-        title: "Added to cart!",
-        description: `${cartItems.length} items added. Redirecting to checkout...`,
+        title: "🎉 Added to cart!",
+        description: `${cartItems.length} items added successfully. Refreshing to update cart...`,
       });
 
-      // Redirect to WooCommerce checkout
+      console.log('⏰ Setting timeout for page reload in 1 second...');
+      // Force page reload to trigger Xootix Side Cart update
       setTimeout(() => {
-        window.location.href = config.wordpress.checkoutUrl;
-      }, 1500);
+        console.log('🔄 EXECUTING PAGE RELOAD NOW!');
+        window.location.reload();
+      }, 1000);
+      
+      console.log('✅ Timeout set, waiting for reload...');
 
     } catch (error) {
       console.error('Failed to add to cart:', error);
@@ -202,6 +337,19 @@ export default function WordPressAlarmPackage() {
   const handleGetQuote = () => {
     // For now, same as Add to Cart
     handleAddToCart();
+  };
+  
+  // Test reload function for debugging
+  const testReload = () => {
+    console.log('🧪 TEST RELOAD BUTTON CLICKED');
+    toast({
+      title: "Testing Reload",
+      description: "Page will reload in 2 seconds...",
+    });
+    setTimeout(() => {
+      console.log('🔄 TEST RELOAD EXECUTING NOW!');
+      window.location.reload();
+    }, 2000);
   };
 
   const handleLeadSubmit = async (data: LeadData) => {
@@ -258,6 +406,7 @@ export default function WordPressAlarmPackage() {
         leadData={leadData}
         onGetPackage={handleAddToCart}
         onGetQuote={handleGetQuote}
+        testReload={testReload}
       />
 
       {/* Add-ons Section - Full width below Hero, only after lead capture */}
