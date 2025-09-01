@@ -131,6 +131,23 @@ export default function WordPressAlarmPackage() {
               title: "✅ State Restored!",
               description: "Your configuration has been restored after cart update.",
             });
+            
+            // Open Xootix Side Cart after state restoration
+            setTimeout(() => {
+              try {
+                console.log('🛒 Attempting to open Xootix Side Cart...');
+                const sideCartBasket = document.querySelector('.xoo-wsc-basket') as HTMLElement;
+                if (sideCartBasket) {
+                  console.log('✅ Found Xootix side cart basket, clicking to open...');
+                  sideCartBasket.click();
+                } else {
+                  console.warn('⚠️ Xootix side cart basket not found (.xoo-wsc-basket)');
+                }
+              } catch (error) {
+                console.error('❌ Failed to open side cart:', error);
+              }
+            }, 1500); // Wait 1.5 seconds for page to fully load
+            
           } else {
             console.log('⏰ Saved state is too old, clearing...');
             localStorage.removeItem('alarm-configurator-state');
@@ -144,6 +161,44 @@ export default function WordPressAlarmPackage() {
     
     // Restore state on component mount
     restoreState();
+    
+    // Check for AddOnsSection state and open side cart if needed
+    const checkAddOnsSectionState = () => {
+      try {
+        const addonsState = localStorage.getItem('addons-section-state');
+        if (addonsState) {
+          const parsed = JSON.parse(addonsState);
+          
+          if (parsed.shouldOpenSideCart && parsed.timestamp && (Date.now() - parsed.timestamp) < 60000) { // Within 1 minute
+            console.log('🛒 AddOnsSection requested side cart to open after reload');
+            
+            // Clear the flag
+            localStorage.removeItem('addons-section-state');
+            
+            // Open side cart
+            setTimeout(() => {
+              try {
+                console.log('🛒 Opening Xootix Side Cart from AddOnsSection state...');
+                const sideCartBasket = document.querySelector('.xoo-wsc-basket') as HTMLElement;
+                if (sideCartBasket) {
+                  console.log('✅ Found Xootix side cart basket, clicking to open...');
+                  sideCartBasket.click();
+                } else {
+                  console.warn('⚠️ Xootix side cart basket not found (.xoo-wsc-basket)');
+                }
+              } catch (error) {
+                console.error('❌ Failed to open side cart:', error);
+              }
+            }, 2000); // Wait 2 seconds for page to fully load
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check AddOnsSection state:', error);
+        localStorage.removeItem('addons-section-state');
+      }
+    };
+    
+    checkAddOnsSectionState();
   }, [toast]);
 
   // Load WooCommerce products - moved to after form submission

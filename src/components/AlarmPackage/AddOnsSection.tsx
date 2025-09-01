@@ -541,20 +541,21 @@ function extractBullets(html: string): string[] {
       const totalPrice = finalCart.totals?.total_price || '0';
       
       // Save current state to localStorage before page reload
-      const stateToSave = {
-        selectedAddons,
-        context,
-        productType,
-        estimatedTotal,
-        timestamp: Date.now()
-      };
-      
-      try {
-        localStorage.setItem('addons-section-state', JSON.stringify(stateToSave));
-        console.log('💾 AddOnsSection: State saved to localStorage before reload');
-      } catch (error) {
-        console.error('Failed to save AddOnsSection state:', error);
-      }
+       const stateToSave = {
+         selectedAddons,
+         context,
+         productType,
+         estimatedTotal,
+         timestamp: Date.now(),
+         shouldOpenSideCart: true // Flag to indicate side cart should open after reload
+       };
+       
+       try {
+         localStorage.setItem('addons-section-state', JSON.stringify(stateToSave));
+         console.log('💾 AddOnsSection: State saved to localStorage before reload');
+       } catch (error) {
+         console.error('Failed to save AddOnsSection state:', error);
+       }
       
       // Show success message
       toast({
