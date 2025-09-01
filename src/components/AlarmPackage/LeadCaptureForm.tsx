@@ -124,7 +124,7 @@ export function LeadCaptureForm({ onSubmit, isLoading = false, productContext, p
       
       if (result.success) {
         setSubmitStatus('success');
-        setSubmitMessage('Thank you! Your information has been submitted successfully. We\'ll contact you soon.');
+        setSubmitMessage('🎉 Thank you for your interest! We\'ve received your details and will be in touch within 24 hours with your personalized quote.');
         // Call the original onSubmit for any additional handling
         onSubmit(formData);
       } else {

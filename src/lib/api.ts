@@ -25,24 +25,44 @@ class WooCommerceAPI {
     }
     if (this.nonce) headers['Nonce'] = this.nonce;
 
-    const res = await fetch(endpoint, { ...options, headers, credentials: 'include' });
+    console.log('🌐 Making API request to:', endpoint);
+    console.log('📋 Request headers:', headers);
+    console.log('⚙️ Request options:', options);
 
-    // Rotate nonce (Woo sends a fresh one every response)
-    const newNonce =
-      res.headers.get('Nonce') ||
-      res.headers.get('nonce') ||
-      res.headers.get('X-WC-Store-API-Nonce') ||
-      res.headers.get('x-wc-store-api-nonce');
-    if (newNonce) this.nonce = newNonce;
+    try {
+      const res = await fetch(endpoint, { ...options, headers, credentials: 'include' });
 
-    if (!res.ok) {
-      let body: unknown = null;
-      try { body = await res.json(); } catch { /* ignore parse errors */ }
-      const msg = body ? `HTTP ${res.status}: ${JSON.stringify(body)}` : `HTTP ${res.status} ${res.statusText}`;
-      throw new Error(msg);
+      console.log('📡 Response status:', res.status, res.statusText);
+      console.log('📋 Response headers:', Object.fromEntries(res.headers.entries()));
+
+      // Rotate nonce (Woo sends a fresh one every response)
+      const newNonce =
+        res.headers.get('Nonce') ||
+        res.headers.get('nonce') ||
+        res.headers.get('X-WC-Store-API-Nonce') ||
+        res.headers.get('x-wc-store-api-nonce');
+      if (newNonce) this.nonce = newNonce;
+
+      if (!res.ok) {
+        let body: unknown = null;
+        try { body = await res.json(); } catch { /* ignore parse errors */ }
+        const errorText = body ? JSON.stringify(body) : res.statusText;
+        console.error('❌ API Error Response:', errorText);
+        const msg = body ? `HTTP ${res.status}: ${JSON.stringify(body)}` : `HTTP ${res.status} ${res.statusText}`;
+        throw new Error(msg);
+      }
+
+      const data = await res.json();
+      console.log('✅ API Response data:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ API request failed:', error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error('🔍 This might be a CORS or network connectivity issue');
+        console.error('🔍 Check if the WooCommerce Store API is accessible at:', endpoint);
+      }
+      throw error;
     }
-
-    return res.json();
   }
 
   async getProducts(params: {
@@ -54,14 +74,36 @@ class WooCommerceAPI {
   } = {}): Promise<WooProduct[]> {
     const queryParams = new URLSearchParams();
 
+    console.log('🔍 getProducts called with params:', params);
+    
     if (params.category) queryParams.set('category', params.category);
     if (params.tag) queryParams.set('tag', params.tag);
     if (params.slug) queryParams.set('slug', params.slug);
     if (params.per_page) queryParams.set('per_page', params.per_page.toString());
     if (params.include?.length) queryParams.set('include', params.include.join(','));
-
-    const endpoint = `${config.wordpress.storeApiBase}/products?${queryParams}`;
-    return this.makeRequest<WooProduct[]>(endpoint);
+    
+    const endpoint = `${config.wordpress.storeApiBase}/products?${queryParams.toString()}`;
+    console.log('📡 Full API endpoint:', endpoint);
+    
+    try {
+      const products = await this.makeRequest<WooProduct[]>(endpoint);
+      console.log(`✅ Retrieved ${products.length} products`);
+      
+      if (products.length === 0) {
+        console.warn('⚠️ No products found with these parameters:', params);
+        console.warn('🔍 This might mean:');
+        console.warn('  - Products don\'t exist in WooCommerce');
+        console.warn('  - Category/tag/slug names are incorrect');
+        console.warn('  - Products are not published');
+        console.warn('  - WooCommerce Store API is not properly configured');
+      }
+      
+      return products;
+    } catch (error) {
+      console.error('❌ getProducts failed:', error);
+      console.error('🔍 Endpoint that failed:', endpoint);
+      throw error;
+    }
   }
 
   // --- Tag helpers ---
@@ -106,21 +148,54 @@ class WooCommerceAPI {
         throw new Error(`Invalid product type: ${productType}`);
       }
       
+      console.log(`🔍 Fetching ${productType} addon products from WooCommerce Store API...`);
       const productConfig = config.products[productType];
       
       if (productType === 'wireless') {
         // Use original working wireless API call
-        return await this.getProducts({ category: productConfig.addonCategory, per_page: perPage });
+        console.log(`📡 Fetching wireless addons with category: ${productConfig.addonCategory}`);
+        const products = await this.getProducts({ category: productConfig.addonCategory, per_page: perPage });
+        
+        if (products.length === 0) {
+          console.warn(`⚠️ No wireless addon products found with category: ${productConfig.addonCategory}`);
+          console.warn('🔍 Trying fallback: fetch all products and filter by category name');
+          
+          // Fallback: try to find products with 'addon' or 'alarm' in name/category
+          const allProducts = await this.getProducts({ per_page: 100 });
+          const fallbackProducts = allProducts.filter(p => 
+            p.name.toLowerCase().includes('sensor') ||
+            p.name.toLowerCase().includes('detector') ||
+            p.name.toLowerCase().includes('keypad') ||
+            p.name.toLowerCase().includes('panic') ||
+            p.categories.some(cat => cat.name.toLowerCase().includes('addon') || cat.name.toLowerCase().includes('alarm'))
+          );
+          
+          if (fallbackProducts.length > 0) {
+            console.log(`✅ Found ${fallbackProducts.length} addon products via fallback search`);
+            return fallbackProducts;
+          }
+        }
+        
+        return products;
       } else {
         // Use new hardwired API call
-        return await this.getProducts({ 
+        console.log(`📡 Fetching hardwired addons with category: ${productConfig.addonCategory}, tag: ${productConfig.addonTag}`);
+        const products = await this.getProducts({ 
           category: productConfig.addonCategory, 
           tag: productConfig.addonTag,
           per_page: perPage 
         });
+        
+        if (products.length === 0) {
+          console.warn(`⚠️ No hardwired addon products found with category: ${productConfig.addonCategory}, tag: ${productConfig.addonTag}`);
+        }
+        
+        return products;
       }
     } catch (error) {
-      console.error(`Failed to fetch ${productType} addon products:`, error);
+      console.error(`❌ Failed to fetch ${productType} addon products:`, error);
+      console.error('🔍 API Endpoint:', `${config.wordpress.storeApiBase}/products`);
+      console.error('🔍 Config:', config.products[productType]);
       throw error;
     }
   }
@@ -134,23 +209,52 @@ class WooCommerceAPI {
         throw new Error(`Invalid product type: ${productType}`);
       }
       
+      console.log(`🔍 Fetching ${productType} base product from WooCommerce Store API...`);
       const productConfig = config.products[productType];
       
       if (productType === 'wireless') {
         // Use original working wireless API call
+        console.log(`📡 Fetching wireless base product with slug: ${productConfig.baseProductSlug}`);
         const products = await this.getProducts({ slug: productConfig.baseProductSlug, per_page: 1 });
+        
+        if (products.length === 0) {
+          console.warn(`⚠️ No wireless base product found with slug: ${productConfig.baseProductSlug}`);
+          console.warn('🔍 Trying fallback: fetch all products and filter by name');
+          
+          // Fallback: try to find by name
+          const allProducts = await this.getProducts({ per_page: 50 });
+          const fallbackProduct = allProducts.find(p => 
+            p.name.toLowerCase().includes('hybrid') && 
+            p.name.toLowerCase().includes('wireless') &&
+            p.name.toLowerCase().includes('alarm')
+          );
+          
+          if (fallbackProduct) {
+            console.log('✅ Found base product via fallback search:', fallbackProduct.name);
+            return fallbackProduct;
+          }
+        }
+        
         return products.length > 0 ? products[0] : null;
       } else {
         // Use new hardwired API call
+        console.log(`📡 Fetching hardwired base product with category: ${productConfig.baseCategory}, tag: ${productConfig.baseTag}`);
         const products = await this.getProducts({ 
           category: productConfig.baseCategory,
           tag: productConfig.baseTag,
           per_page: 1 
         });
+        
+        if (products.length === 0) {
+          console.warn(`⚠️ No hardwired base product found with category: ${productConfig.baseCategory}, tag: ${productConfig.baseTag}`);
+        }
+        
         return products.length > 0 ? products[0] : null;
       }
     } catch (error) {
-      console.error(`Failed to fetch ${productType} base product:`, error);
+      console.error(`❌ Failed to fetch ${productType} base product:`, error);
+      console.error('🔍 API Endpoint:', `${config.wordpress.storeApiBase}/products`);
+      console.error('🔍 Config:', config.products[productType]);
       return null;
     }
   }
@@ -184,8 +288,16 @@ class WooCommerceAPI {
 
   // Read cart (also bootstraps nonce for guests)
   async getCart(): Promise<WooCart> {
-    const url = `${config.wordpress.storeApiBase}/cart`;
-    return this.makeRequest<WooCart>(url);
+    try {
+      console.log('🔍 Fetching cart from WooCommerce Store API...');
+      const url = `${config.wordpress.storeApiBase}/cart`;
+      console.log('📡 Cart API URL:', url);
+      return await this.makeRequest<WooCart>(url);
+    } catch (error) {
+      console.error('❌ Failed to fetch cart:', error);
+      console.error('🔍 Cart API Endpoint:', `${config.wordpress.storeApiBase}/cart`);
+      throw error;
+    }
   }
 
   // Add multiple items; ensures nonce first; rotates automatically

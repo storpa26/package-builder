@@ -213,8 +213,8 @@ export default function WordPressAlarmPackage() {
     
     // Show success message
     toast({
-      title: "Lead Captured",
-      description: "Thank you! You can now customize your package below.",
+      title: "🎉 Thank You!",
+      description: "We've got your details! Now let's customize your perfect security system below.",
     });
   };
 

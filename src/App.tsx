@@ -16,10 +16,14 @@ const queryClient = new QueryClient();
 
 function App() {
   // Check if we're in WordPress context or standalone
-  const isWordPress = typeof window !== 'undefined' && window.location.pathname.includes('wp-');
+  const isWordPress = typeof window !== 'undefined' && (
+    window.location.pathname.includes('wp-') ||
+    window.location.pathname.includes('hybrid-wireless-alarm-system') ||
+    window.location.hostname !== 'localhost' // Assume production is always WordPress
+  );
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
   
-  // For WordPress integration, render specific pages based on path
+  // For WordPress integration, always show the calculation page
   if (isWordPress || currentPath === '/alarm' || (currentPath === '/' && !window.location.hash)) {
     return (
       <QueryClientProvider client={queryClient}>

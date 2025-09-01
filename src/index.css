@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* WordPress Style Isolation - Prevent WordPress styles from affecting our React app */
+.alarm-package-app {
+  /* Reset WordPress font styles */
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+  font-weight: 400 !important;
+  
+  /* Reset WordPress spacing */
+  margin: 0 !important;
+  padding: 0 !important;
+  
+  /* Ensure our styles take precedence */
+  all: initial;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
+}
+
+.alarm-package-app * {
+  /* Reset all child elements */
+  box-sizing: border-box;
+}
+
+/* Ensure Tailwind styles work properly within our isolated container */
+.alarm-package-app .text-sm { font-size: 0.875rem !important; }
+.alarm-package-app .text-base { font-size: 1rem !important; }
+.alarm-package-app .text-lg { font-size: 1.125rem !important; }
+.alarm-package-app .text-xl { font-size: 1.25rem !important; }
+.alarm-package-app .text-2xl { font-size: 1.5rem !important; }
+.alarm-package-app .text-3xl { font-size: 1.875rem !important; }
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
