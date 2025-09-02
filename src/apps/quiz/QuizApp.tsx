@@ -188,7 +188,7 @@ export default function QuizApp() {
 
   if (step === 'confirm') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl p-8 text-center space-y-6 animate-in slide-in-from-bottom-4 duration-500">
           <div className="space-y-4">
             <div className="w-16 h-16 mx-auto bg-gradient-to-r from-[#c95375] to-[#ff66c4] rounded-full flex items-center justify-center">
@@ -243,7 +243,7 @@ export default function QuizApp() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-4xl space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
