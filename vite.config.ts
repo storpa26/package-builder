@@ -19,4 +19,14 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    manifest: true, // Enable manifest.json generation
+    outDir: 'dist',
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'src/main.tsx'),
+        quiz: path.resolve(__dirname, 'src/entry-quiz.tsx')
+      }
+    }
+  },
 }));
