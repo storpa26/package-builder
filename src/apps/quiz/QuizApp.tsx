@@ -191,7 +191,7 @@ export default function QuizApp() {
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl p-8 text-center space-y-6 animate-in slide-in-from-bottom-4 duration-500">
           <div className="space-y-4">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-r from-[#c95375] to-[#ff66c4] rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto bg-gradient-brand rounded-full flex items-center justify-center">
               {quiz.system === 'hardwired' ? (
                 <Zap className="w-8 h-8 text-white" />
               ) : (
@@ -207,13 +207,13 @@ export default function QuizApp() {
               {getRationaleText(quiz.system!)}
             </p>
             
-            <div className="bg-slate-50 rounded-lg p-4 space-y-2">
-              <div className="text-sm text-[#838381]">Your Selection:</div>
+            <div className="bg-muted rounded-lg p-4 space-y-2">
+              <div className="text-sm text-muted-foreground">Your Selection:</div>
               <div className="flex items-center justify-center gap-4 text-sm">
-                <Badge variant="secondary" className="bg-[#288896] text-white">
+                <Badge variant="secondary" className="bg-teal text-white">
                   {quiz.service === 'alarm' ? 'Alarm System' : 'Intercom System'}
                 </Badge>
-                <Badge variant="secondary" className="bg-[#005667] text-white">
+                <Badge variant="secondary" className="bg-teal-dark text-white">
                   {propertyOptions.find(p => p.id === quiz.property)?.label}
                 </Badge>
               </div>
@@ -232,7 +232,7 @@ export default function QuizApp() {
             <Button
               onClick={handleConfirm}
               disabled={isSubmitting}
-              className="px-8 bg-[#c95375] hover:bg-[#ff66c4] text-white transition-all duration-200 transform hover:scale-105"
+              className="px-8 bg-primary hover:bg-pink-bright text-white transition-all duration-200 transform hover:scale-105"
             >
               {isSubmitting ? 'Redirecting...' : 'Go to my page'}
             </Button>
@@ -247,25 +247,25 @@ export default function QuizApp() {
       <div className="w-full max-w-4xl space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-[#020202]">
+          <h1 className="text-4xl font-bold text-black">
             Find Your Perfect Security System
           </h1>
-          <p className="text-lg text-[#838381]">
+          <p className="text-lg text-ash">
             Answer a few quick questions to get personalized recommendations
           </p>
         </div>
 
         {/* Service Selection */}
-        <Card className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-[#020202]">What do you need?</h2>
+        <Card className="p-6 space-y-4 shadow-card">
+          <h2 className="text-xl font-semibold text-black">What do you need?</h2>
           <div className="flex gap-4 justify-center">
             <button
               onClick={() => handleServiceChange('alarm')}
               className={cn(
                 "px-6 py-3 rounded-lg border-2 transition-all duration-200 transform hover:scale-105",
                 quiz.service === 'alarm'
-                  ? "border-[#c95375] bg-[#c95375] text-white"
-                  : "border-slate-200 bg-white text-[#020202] hover:border-[#c95375]"
+                  ? "border-primary bg-primary text-white"
+                  : "border-border bg-white text-black hover:border-primary"
               )}
             >
               🚨 Alarm System
@@ -275,8 +275,8 @@ export default function QuizApp() {
               className={cn(
                 "px-6 py-3 rounded-lg border-2 transition-all duration-200 transform hover:scale-105",
                 quiz.service === 'intercom'
-                  ? "border-[#c95375] bg-[#c95375] text-white"
-                  : "border-slate-200 bg-white text-[#020202] hover:border-[#c95375]"
+                  ? "border-primary bg-primary text-white"
+                  : "border-border bg-white text-black hover:border-primary"
               )}
             >
               📞 Intercom System
@@ -285,8 +285,8 @@ export default function QuizApp() {
         </Card>
 
         {/* Property Selection */}
-        <Card className="p-6 space-y-6">
-          <h2 className="text-xl font-semibold text-[#020202]">What's your property type?</h2>
+        <Card className="p-6 space-y-6 shadow-card">
+          <h2 className="text-xl font-semibold text-black">What's your property type?</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {propertyOptions.map((option) => {
@@ -298,20 +298,20 @@ export default function QuizApp() {
                   key={option.id}
                   onClick={() => handlePropertySelect(option.id)}
                   className={cn(
-                    "p-6 rounded-lg border-2 text-left transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#c95375] focus:ring-offset-2",
+                    "p-6 rounded-lg border-2 text-left transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
                     isSelected
-                      ? "border-[#c95375] bg-[#c95375] text-white shadow-lg"
-                      : "border-slate-200 bg-white text-[#020202] hover:border-[#c95375] hover:shadow-md"
+                      ? "border-primary bg-primary text-white shadow-elevated"
+                      : "border-border bg-white text-black hover:border-primary hover:shadow-card"
                   )}
                   role="radio"
                   aria-checked={isSelected}
                   tabIndex={0}
                 >
                   <div className="flex items-start gap-3">
-                    <Icon className={cn("w-6 h-6 mt-1", isSelected ? "text-white" : "text-[#288896]")} />
+                    <Icon className={cn("w-6 h-6 mt-1", isSelected ? "text-white" : "text-teal")} />
                     <div>
                       <div className="font-semibold">{option.label}</div>
-                      <div className={cn("text-sm", isSelected ? "text-white/80" : "text-[#838381]")}>                        {option.description}
+                      <div className={cn("text-sm", isSelected ? "text-white/80" : "text-ash")}>                        {option.description}
                       </div>
                     </div>
                   </div>
@@ -327,8 +327,8 @@ export default function QuizApp() {
                 className={cn(
                   "px-4 py-2 text-sm font-medium",
                   quiz.system === 'hardwired'
-                    ? "bg-[#288896] text-white"
-                    : "bg-[#018295] text-white"
+                    ? "bg-teal text-white"
+                    : "bg-teal-new text-white"
                 )}
               >
                 {quiz.system === 'hardwired' ? '⚡' : '📶'} You'll likely need {quiz.system === 'hardwired' ? 'Hardwired' : 'Wireless'}
@@ -343,7 +343,7 @@ export default function QuizApp() {
             <Button
               onClick={handleContinue}
               size="lg"
-              className="px-12 py-3 bg-[#c95375] hover:bg-[#ff66c4] text-white text-lg transition-all duration-200 transform hover:scale-105"
+              className="px-12 py-3 bg-primary hover:bg-pink-bright text-white text-lg transition-all duration-200 transform hover:scale-105"
             >
               Continue →
             </Button>

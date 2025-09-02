@@ -21,6 +21,20 @@ export default {
 		},
 		extend: {
 			colors: {
+				// Cheap Alarms Brand Colors (Direct Access)
+				black: 'hsl(var(--black))',
+				pink: {
+					DEFAULT: 'hsl(var(--pink))',
+					bright: 'hsl(var(--pink-bright))'
+				},
+				teal: {
+					DEFAULT: 'hsl(var(--teal))',
+					dark: 'hsl(var(--teal-dark))',
+					new: 'hsl(var(--teal-new))'
+				},
+				ash: 'hsl(var(--ash))',
+				
+				// Semantic Design System
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
@@ -47,6 +61,13 @@ export default {
 					DEFAULT: 'hsl(var(--accent))',
 					foreground: 'hsl(var(--accent-foreground))'
 				},
+				
+				// Capacity & Progress Colors
+				capacity: {
+					safe: 'hsl(var(--capacity-safe))',
+					warning: 'hsl(var(--capacity-warning))',
+					danger: 'hsl(var(--capacity-danger))'
+				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
 					foreground: 'hsl(var(--popover-foreground))'
@@ -70,6 +91,17 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			backgroundImage: {
+				'gradient-brand': 'var(--gradient-brand)',
+				'gradient-subtle': 'var(--gradient-subtle)'
+			},
+			boxShadow: {
+				'card': 'var(--shadow-card)',
+				'elevated': 'var(--shadow-elevated)'
+			},
+			fontFamily: {
+				sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', '"Noto Sans"', 'sans-serif']
 			},
 			keyframes: {
 				'accordion-down': {
