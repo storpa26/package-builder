@@ -150,9 +150,15 @@ export default function QuizApp() {
       
       // Build redirect URL
       const baseUrl = 'https://cheapalarms.com.au';
-      const servicePath = quiz.service === 'alarm' ? 'alarm' : 'intercom';
-      const systemPath = quiz.system === 'hardwired' ? 'wired' : 'wireless';
-      const redirectUrl = `${baseUrl}/${servicePath}-${systemPath}/?why=${quiz.system}&src=quiz`;
+      let redirectUrl;
+      
+      if (quiz.service === 'alarm') {
+        redirectUrl = `${baseUrl}/hybrid-wireless-alarm-system/`;
+      } else {
+        // Intercom service
+        const systemPath = quiz.system === 'hardwired' ? 'wired' : 'wireless';
+        redirectUrl = `${baseUrl}/intercom-${systemPath}/`;
+      }
       
       // Track completion
       trackAnalytics('quiz_complete', {
