@@ -38,6 +38,59 @@ const Index = () => {
 
       <section className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+              <img 
+                src="/placeholder.svg" 
+                alt="Alarm System" 
+                className="w-full h-48 object-cover"
+              />
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2">Alarm Systems</h3>
+                <p className="text-gray-600 mb-4">
+                  Professional security systems for homes and businesses with customizable packages.
+                </p>
+                <Button asChild>
+                  <Link to="/alarm">Configure System</Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+              <img 
+                src="/placeholder.svg" 
+                alt="Intercom System" 
+                className="w-full h-48 object-cover"
+              />
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2">Intercom Systems</h3>
+                <p className="text-gray-600 mb-4">
+                  Modern intercom solutions for residential and commercial properties.
+                </p>
+                <Button asChild>
+                  <Link to="/intercom">View Options</Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+              <img 
+                src="/placeholder.svg" 
+                alt="Ajax StarterKit" 
+                className="w-full h-48 object-cover"
+              />
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2">Ajax StarterKit</h3>
+                <p className="text-gray-600 mb-4">
+                  Professional wireless security system for apartments and small offices.
+                </p>
+                <Button asChild>
+                  <Link to="/ajax-starter-kit">Learn More</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+          
           <div className="grid md:grid-cols-3 gap-8">
             <Card>
               <CardContent className="p-6 text-center">
