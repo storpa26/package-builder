@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* WordPress Style Isolation - Prevent WordPress styles from affecting our React app */
-.alarm-package-app {
+.cheap-alarms-app {
   /* Reset WordPress font styles */
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
   font-size: 16px !important;
@@ -19,18 +19,18 @@
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
 }
 
-.alarm-package-app * {
+.cheap-alarms-app * {
   /* Reset all child elements */
   box-sizing: border-box;
 }
 
 /* Ensure Tailwind styles work properly within our isolated container */
-.alarm-package-app .text-sm { font-size: 0.875rem !important; }
-.alarm-package-app .text-base { font-size: 1rem !important; }
-.alarm-package-app .text-lg { font-size: 1.125rem !important; }
-.alarm-package-app .text-xl { font-size: 1.25rem !important; }
-.alarm-package-app .text-2xl { font-size: 1.5rem !important; }
-.alarm-package-app .text-3xl { font-size: 1.875rem !important; }
+.cheap-alarms-app .text-sm { font-size: 0.875rem !important; }
+.cheap-alarms-app .text-base { font-size: 1rem !important; }
+.cheap-alarms-app .text-lg { font-size: 1.125rem !important; }
+.cheap-alarms-app .text-xl { font-size: 1.25rem !important; }
+.cheap-alarms-app .text-2xl { font-size: 1.5rem !important; }
+.cheap-alarms-app .text-3xl { font-size: 1.875rem !important; }
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
@@ -98,19 +98,12 @@ All colors MUST be HSL.
     --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -164,7 +157,7 @@ All colors MUST be HSL.
 }
 
 /* WordPress Style Protection */
-.alarm-package-app {
+.cheap-alarms-app {
   /* Reset WordPress styles */
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
   line-height: 1.5 !important;
@@ -204,4 +197,184 @@ All colors MUST be HSL.
   .font-medium { font-weight: 500 !important; }
   .font-semibold { font-weight: 600 !important; }
   .font-bold { font-weight: 700 !important; }
+}
+
+/* Dark theme for our app */
+.cheap-alarms-app.dark {
+  --background: 0 0% 1%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 1%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 1%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 320 100% 70%;
+  --primary-foreground: 0 0% 1%;
+  --secondary: 188 100% 58%;
+  --secondary-foreground: 0 0% 1%;
+  --muted: 188 100% 20%;
+  --muted-foreground: 0 0% 80%;
+  --accent: 188 100% 58%;
+  --accent-foreground: 0 0% 1%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 60 1% 30%;
+  --input: 60 1% 30%;
+  --ring: 320 100% 70%;
+}
+
+/* Scoped border color */
+.cheap-alarms-app * {
+  border-color: hsl(var(--border));
+}
+
+/* Neon ring effect for active property buttons (brand pink) */
+.cheap-alarms-app .neon-ring {
+  position: relative;
+  border-radius: 1rem; /* match rounded-2xl */
+  --angle: 0deg;
+}
+.cheap-alarms-app .neon-ring::after {
+  content: "";
+  position: absolute;
+  inset: -2px; /* slightly outside to sit on border */
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--angle), hsl(var(--primary)) 0%, hsl(var(--primary)/0.3) 35%, hsl(var(--primary)) 70%, hsl(var(--primary)/0.3) 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px hsl(var(--primary))) drop-shadow(0 0 12px hsl(var(--primary)/0.5));
+}
+/* One-shot sweep */
+.cheap-alarms-app .neon-animate::after,
+.cheap-alarms-app .neon-animate-once::after {
+  animation: neon-sweep 1100ms linear 1;
+}
+/* Continuous sweep */
+.cheap-alarms-app .neon-animate-loop::after {
+  animation: neon-sweep 1100ms linear infinite;
+}
+@keyframes neon-sweep {
+  0% { opacity: 1; --angle: 0deg; }
+  90% { opacity: 1; --angle: 360deg; }
+  100% { opacity: 0; --angle: 360deg; }
+}
+
+/* Smooth Accordion animations for Radix-based content */
+.cheap-alarms-app .accordion-transition[data-state="open"] {
+  animation: accordion-down 220ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.cheap-alarms-app .accordion-transition[data-state="closed"] {
+  animation: accordion-up 220ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
+
+/* Hover neon glow and 3D pop */
+.cheap-alarms-app .neon-ring:hover::after {
+  opacity: 0.22;
+}
+
+.cheap-alarms-app .neon-pop-3d {
+  will-change: transform, box-shadow;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transition: transform 180ms cubic-bezier(0.18, 0.89, 0.32, 1.28), box-shadow 180ms ease;
+}
+.cheap-alarms-app .neon-pop-3d:hover {
+  /* Avoid hover scaling to prevent subpixel text blurring */
+  transform: translateZ(0);
+}
+
+/* Modal surface contrast rules */
+.cheap-alarms-app .modal-surface {
+  color: white;
+}
+/* Any white background inside the modal uses black text for legibility */
+.cheap-alarms-app .modal-surface [class*="bg-white"],
+.cheap-alarms-app .modal-surface .bg-white,
+.cheap-alarms-app .modal-surface .bg-background,
+.cheap-alarms-app .modal-surface [style*="background-color: white"],
+.cheap-alarms-app .modal-surface [style*="background: white"],
+.cheap-alarms-app .modal-surface .card,
+.cheap-alarms-app .modal-surface .sheet {
+  color: black;
+}
+
+/* Legacy fallback styles (keep original for backward compatibility) */
+:root {
+  /* Light theme colors - Custom Brand Colors */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 1%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 1%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 1%;
+  --primary: 342 55% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 188 68% 37%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 60 1% 51%;
+  --muted-foreground: 0 0% 1%;
+  --accent: 188 68% 37%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 60 1% 51%;
+  --input: 60 1% 51%;
+  --ring: 342 55% 55%;
+  --radius: 0.5rem;
+  
+  /* Font settings */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dark {
+  --background: 0 0% 1%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 1%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 1%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 320 100% 70%;
+  --primary-foreground: 0 0% 1%;
+  --secondary: 188 100% 58%;
+  --secondary-foreground: 0 0% 1%;
+  --muted: 188 100% 20%;
+  --muted-foreground: 0 0% 80%;
+  --accent: 188 100% 58%;
+  --accent-foreground: 0 0% 1%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 60 1% 30%;
+  --input: 60 1% 30%;
+  --ring: 320 100% 70%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
